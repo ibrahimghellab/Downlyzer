@@ -1,10 +1,10 @@
-package altn72.tpfilrouge;
+package fr.efrei.downlyzer;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class TpFilRougeApplicationTests {
+class DownlyzerApplicationTests {
 
     @Test
     void contextLoads() {
