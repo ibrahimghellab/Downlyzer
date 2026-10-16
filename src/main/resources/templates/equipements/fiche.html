@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${equipement.reference} + ' — Downlyzer'">Équipement — Downlyzer</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<main>
+    <p>
+        <a th:href="@{/stations/{id}(id=${equipement.station.id})}"
+           th:text="'← ' + ${equipement.station.nom}">← Gare Centrale</a>
+    </p>
+
+    <h1 th:text="${equipement.reference} + ' — ' + ${equipement.libelle}">ASC-001 — Ascenseur quai A</h1>
+
+    <dl>
+        <dt>Station</dt>
+        <dd th:text="${equipement.station.nom}">Gare Centrale</dd>
+        <dt>Type</dt>
+        <dd th:text="${equipement.typeEquipement.libelle}">Ascenseur</dd>
+        <dt>État</dt>
+        <dd th:text="#{etat.__${equipement.etat}__}">En service</dd>
+    </dl>
+
+    <h2>Incidents</h2>
+
+    <p th:if="${incidents.isEmpty()}">Aucun incident n'a été signalé sur cet équipement.</p>
+
+    <table th:unless="${incidents.isEmpty()}">
+        <thead>
+        <tr>
+            <th>Ouvert le</th>
+            <th>Description</th>
+            <th>Statut</th>
+            <th>Prestataire</th>
+            <th>Résolu le</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="incident : ${incidents}">
+            <td th:text="${#temporals.format(incident.dateOuverture, 'dd/MM/yyyy HH:mm')}">14/10/2026 08:00</td>
+            <td th:text="${incident.description}">Ascenseur bloqué</td>
+            <td th:text="#{statut.__${incident.statut}__}">Non affecté</td>
+            <td th:text="${incident.prestataire?.nom} ?: '—'">Ascenso Maintenance</td>
+            <td th:text="${incident.dateResolution != null} ? ${#temporals.format(incident.dateResolution, 'dd/MM/yyyy HH:mm')} : '—'">—</td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${station.nom} + ' — Downlyzer'">Station — Downlyzer</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<main>
+    <p><a th:href="@{/stations}">← Toutes les stations</a></p>
+    <h1 th:text="${station.nom}">Gare Centrale</h1>
+
+    <p th:if="${equipements.isEmpty()}">Aucun équipement n'est installé dans cette station.</p>
+
+    <table th:unless="${equipements.isEmpty()}">
+        <thead>
+        <tr>
+            <th>Référence</th>
+            <th>Équipement</th>
+            <th>Type</th>
+            <th>État</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="equipement : ${equipements}">
+            <td><a th:href="@{/equipements/{id}(id=${equipement.id})}" th:text="${equipement.reference}">ASC-001</a></td>
+            <td th:text="${equipement.libelle}">Ascenseur quai A</td>
+            <td th:text="${equipement.typeEquipement.libelle}">Ascenseur</td>
+            <td th:text="#{etat.__${equipement.etat}__}">En service</td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>
