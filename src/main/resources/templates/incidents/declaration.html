@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Déclarer un incident — Downlyzer</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header th:replace="~{fragments/entete :: entete}"></header>
+<main>
+    <p><a th:href="@{/equipements/{id}(id=${equipement.id})}" th:text="'← ' + ${equipement.reference}">← ASC-001</a></p>
+
+    <h1>Déclarer un incident</h1>
+    <p>
+        <strong th:text="${equipement.reference} + ' — ' + ${equipement.libelle}">ASC-001 — Ascenseur quai A</strong>,
+        station <span th:text="${equipement.station.nom}">Gare Centrale</span>
+    </p>
+
+    <!-- th:action ajoute le jeton CSRF ; th:object relie le formulaire à l'objet « declaration » du modèle -->
+    <form method="post" th:action="@{/equipements/{id}/incidents(id=${equipement.id})}" th:object="${declaration}">
+        <label for="description">Description de la panne</label>
+        <textarea id="description" th:field="*{description}" rows="5" required minlength="10" maxlength="1000"
+                  placeholder="Ce que vous avez constaté : symptôme, emplacement exact…"></textarea>
+        <p class="message-erreur" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">
+            La description doit contenir entre 10 et 1000 caractères.
+        </p>
+
+        <button type="submit">Déclarer l'incident</button>
+        <a th:href="@{/equipements/{id}(id=${equipement.id})}">Annuler</a>
+    </form>
+</main>
+</body>
+</html>
