@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Stations — Downlyzer</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header th:replace="~{fragments/entete :: entete}"></header>
+<main>
+    <h1>Stations du réseau</h1>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Code</th>
+            <th>Station</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="station : ${stations}">
+            <td th:text="${station.code}">GCE</td>
+            <td><a th:href="@{/stations/{id}(id=${station.id})}" th:text="${station.nom}">Gare Centrale</a></td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>

@@ -7,6 +7,7 @@
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
+<header th:replace="~{fragments/entete :: entete}"></header>
 <main>
     <p>
         <a th:href="@{/stations/{id}(id=${equipement.station.id})}"
@@ -24,7 +25,11 @@
         <dd th:text="#{etat.__${equipement.etat}__}">En service</dd>
     </dl>
 
+    <p class="message-succes" role="status" th:if="${succes}" th:text="${succes}">L'incident a bien été déclaré.</p>
+
     <h2>Incidents</h2>
+
+    <p><a th:href="@{/equipements/{id}/incidents/nouveau(id=${equipement.id})}">Déclarer un incident</a></p>
 
     <p th:if="${incidents.isEmpty()}">Aucun incident n'a été signalé sur cet équipement.</p>
 

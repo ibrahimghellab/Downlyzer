@@ -17,6 +17,13 @@ public class StationControleur {
         this.stationService = stationService;
     }
 
+
+    @GetMapping
+    public String afficherStations(Model model) {
+        model.addAttribute("stations", stationService.listerStations());
+        return "stations/liste";
+    }
+
     @GetMapping("/{id}")
     public String afficherEquipementsDeLaStation(@PathVariable Long id, Model model) {
         model.addAttribute("station", stationService.trouverStation(id));

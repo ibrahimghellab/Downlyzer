@@ -7,6 +7,7 @@
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
+<header th:replace="~{fragments/entete :: entete}"></header>
 <main>
     <p><a th:href="@{/stations}">← Toutes les stations</a></p>
     <h1 th:text="${station.nom}">Gare Centrale</h1>

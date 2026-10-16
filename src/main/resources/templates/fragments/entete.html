@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- En-tête commun à toutes les pages (F1) : inclus avec th:replace="~{fragments/entete :: entete}" -->
+<header th:fragment="entete" class="entete">
+    <a class="logo" th:href="@{/stations}">Downlyzer</a>
+    <div class="utilisateur" th:if="${utilisateurConnecte != null}">
+        Bonjour <span th:text="${utilisateurConnecte.prenom}">Karim</span>
+        (<span th:text="#{profil.__${utilisateurConnecte.profil}__}">Agent de station</span>) |
+        <!-- La déconnexion est un POST, pour être protégée par le jeton CSRF -->
+        <form class="deconnexion" method="post" th:action="@{/deconnexion}">
+            <button type="submit">Déconnectez-vous</button>
+        </form>
+    </div>
+</header>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Connexion — Downlyzer</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<main class="connexion">
+    <h1>Downlyzer</h1>
+    <p>Supervision des équipements et suivi des incidents</p>
+
+    <!-- Spring Security redirige vers /connexion?error quand le login ou le mot de passe est faux (F1) -->
+    <p class="message-erreur" role="alert" th:if="${param.error}">
+        Identifiant ou mot de passe incorrect.
+    </p>
+
+    <!-- Spring Security redirige vers /connexion?logout après « Déconnectez-vous » -->
+    <p class="message-info" role="status" th:if="${param.logout}">
+        Vous êtes déconnecté.
+    </p>
+
+    <!-- th:action ajoute automatiquement le jeton CSRF exigé par Spring Security -->
+    <form method="post" th:action="@{/connexion}">
+        <label for="username">Identifiant</label>
+        <input type="text" id="username" name="username" autocomplete="username" required autofocus>
+
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
+
+        <button type="submit">Se connecter</button>
+    </form>
+</main>
+</body>
+</html>
