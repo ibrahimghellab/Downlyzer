@@ -8,6 +8,7 @@ import fr.efrei.downlyzer.modele.prestataire.Prestataire;
 import fr.efrei.downlyzer.modele.utilisateur.Utilisateur;
 import jakarta.persistence.*;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -118,6 +119,12 @@ public class Incident {
                     "L'incident n° " + id + " est résolu : sa description ne peut plus être modifiée.");
         }
         this.description = nouvelleDescription;
+    }
+
+    // Calculée, jamais stockée : jusqu'à maintenant pour un incident en cours, jusqu'à sa résolution sinon
+    public Duration dureeOuverture(LocalDateTime maintenant) {
+        LocalDateTime fin = estResolu() ? dateResolution : maintenant;
+        return Duration.between(dateOuverture, fin);
     }
 
     public boolean estResolu() {

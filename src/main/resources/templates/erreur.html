@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${titre} + ' — Downlyzer'">Erreur — Downlyzer</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header th:replace="~{fragments/entete :: entete}"></header>
+<main>
+    <h1 th:text="${titre}">Introuvable</h1>
+    <p class="message-erreur" th:text="${message}">L'incident n° 999 n'existe pas.</p>
+    <p><a th:href="@{/stations}">← Retour aux stations</a></p>
+</main>
+</body>
+</html>

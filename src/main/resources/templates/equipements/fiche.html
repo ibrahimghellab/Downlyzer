@@ -46,7 +46,7 @@
         <tbody>
         <tr th:each="incident : ${incidents}">
             <td th:text="${#temporals.format(incident.dateOuverture, 'dd/MM/yyyy HH:mm')}">14/10/2026 08:00</td>
-            <td th:text="${incident.description}">Ascenseur bloqué</td>
+            <td><a th:href="@{/incidents/{id}(id=${incident.id})}" th:text="${incident.description}">Ascenseur bloqué</a></td>
             <td th:text="#{statut.__${incident.statut}__}">Non affecté</td>
             <td th:text="${incident.prestataire?.nom} ?: '—'">Ascenso Maintenance</td>
             <td th:text="${incident.dateResolution != null} ? ${#temporals.format(incident.dateResolution, 'dd/MM/yyyy HH:mm')} : '—'">—</td>

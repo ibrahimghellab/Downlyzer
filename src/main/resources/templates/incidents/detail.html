@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="'Incident n° ' + ${incident.id} + ' — Downlyzer'">Incident — Downlyzer</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header th:replace="~{fragments/entete :: entete}"></header>
+<main>
+    <p>
+        <a th:href="@{/equipements/{id}(id=${incident.equipement.id})}"
+           th:text="'← ' + ${incident.equipement.reference}">← ASC-001</a>
+    </p>
+
+    <h1 th:text="'Incident n° ' + ${incident.id}">Incident n° 12</h1>
+
+    <p class="message-succes" role="status" th:if="${succes}" th:text="${succes}">La description a bien été modifiée.</p>
+
+    <h2>Description</h2>
+    <p th:text="${incident.description}">Ascenseur bloqué entre deux étages.</p>
+    <p th:if="${descriptionModifiable}">
+        <a th:href="@{/incidents/{id}/description(id=${incident.id})}">Modifier la description</a>
+    </p>
+
+    <dl>
+        <dt>Équipement</dt>
+        <dd th:text="${incident.equipement.reference} + ' — ' + ${incident.equipement.libelle}">ASC-001 — Ascenseur quai A</dd>
+        <dt>Station</dt>
+        <dd>
+            <a th:href="@{/stations/{id}(id=${incident.equipement.station.id})}"
+               th:text="${incident.equipement.station.nom}">Gare Centrale</a>
+        </dd>
+        <dt>Statut</dt>
+        <dd th:text="#{statut.__${incident.statut}__}">Non affecté</dd>
+        <dt>Signalé par</dt>
+        <dd>
+            <span th:text="#{source.__${incident.source}__}">Saisie manuelle</span>
+            <span th:if="${incident.declarant != null}"
+                  th:text="'— ' + ${incident.declarant.prenom} + ' ' + ${incident.declarant.nom}">— Karim Benali</span>
+        </dd>
+        <dt>Ouvert le</dt>
+        <dd th:text="${#temporals.format(incident.dateOuverture, 'dd/MM/yyyy HH:mm')}">14/10/2026 08:00</dd>
+        <dt th:text="${incident.estResolu()} ? 'Durée avant résolution' : 'Ouvert depuis'">Ouvert depuis</dt>
+        <dd th:text="${dureeOuverture.toDays()} + ' j ' + ${dureeOuverture.toHoursPart()} + ' h ' + ${dureeOuverture.toMinutesPart()} + ' min'">2 j 5 h 12 min</dd>
+    </dl>
+
+    <h2>Prise en charge</h2>
+    <p th:if="${incident.prestataire == null}"
+       th:text="${incident.estResolu()} ? 'Aucun prestataire n\'est intervenu.' : 'Aucun prestataire n\'a encore été affecté.'">
+        Aucun prestataire n'a encore été affecté.</p>
+    <dl th:if="${incident.prestataire != null}">
+        <dt>Prestataire</dt>
+        <dd th:text="${incident.prestataire.nom}">Ascenso Maintenance</dd>
+        <dt>Contact</dt>
+        <dd th:text="${incident.prestataire.email} + ' — ' + ${incident.prestataire.telephone}">contact@ascenso.fr — 01 23 45 67 89</dd>
+        <dt>Affecté le</dt>
+        <dd th:text="${#temporals.format(incident.dateAffectation, 'dd/MM/yyyy HH:mm')}">14/10/2026 10:30</dd>
+    </dl>
+
+    <th:block th:if="${incident.estResolu()}">
+        <h2>Résolution</h2>
+        <dl>
+            <dt>Résolu le</dt>
+            <dd th:text="${#temporals.format(incident.dateResolution, 'dd/MM/yyyy HH:mm')}">15/10/2026 16:00</dd>
+            <dt>Commentaire</dt>
+            <dd th:text="${incident.commentaireResolution} ?: '—'">Câble de traction remplacé.</dd>
+        </dl>
+
+        <h2>Évaluation du prestataire</h2>
+        <p th:if="${!incident.estEvaluable()}">Résolu sans prestataire : il n'y a pas d'intervention à évaluer.</p>
+        <p th:if="${incident.estEvaluable() and evaluation == null}">L'intervention n'a pas encore été évaluée.</p>
+        <dl th:if="${evaluation != null}">
+            <dt>Note</dt>
+            <dd th:text="${evaluation.note} + ' / 5'">4 / 5</dd>
+            <dt>Commentaire</dt>
+            <dd th:text="${evaluation.commentaire} ?: '—'">Intervention rapide.</dd>
+            <dt>Évalué le</dt>
+            <dd th:text="${#temporals.format(evaluation.dateEvaluation, 'dd/MM/yyyy')}">16/10/2026</dd>
+        </dl>
+    </th:block>
+</main>
+</body>
+</html>
