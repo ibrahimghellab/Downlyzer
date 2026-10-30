@@ -1,17 +1,28 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <!-- Feuilles de style communes à toutes les pages : incluses avec th:replace="~{fragments/entete :: styles}" -->
+    <th:block th:fragment="styles">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+        <link rel="stylesheet" th:href="@{/css/style.css}">
+    </th:block>
+</head>
 <body>
 <!-- En-tête commun à toutes les pages (F1) : inclus avec th:replace="~{fragments/entete :: entete}" -->
-<header th:fragment="entete" class="entete">
-    <a class="logo" th:href="@{/stations}">Downlyzer</a>
-    <div class="utilisateur" th:if="${utilisateurConnecte != null}">
-        Bonjour <span th:text="${utilisateurConnecte.prenom}">Karim</span>
-        (<span th:text="#{profil.__${utilisateurConnecte.profil}__}">Agent de station</span>) |
-        <!-- La déconnexion est un POST, pour être protégée par le jeton CSRF -->
-        <form class="deconnexion" method="post" th:action="@{/deconnexion}">
-            <button type="submit">Déconnectez-vous</button>
-        </form>
-    </div>
+<header th:fragment="entete" class="mb-4">
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand fw-bold" th:href="@{/stations}">Downlyzer</a>
+            <div class="navbar-text text-light" th:if="${utilisateurConnecte != null}">
+                Bonjour <span th:text="${utilisateurConnecte.prenom}">Karim</span>
+                (<span th:text="#{profil.__${utilisateurConnecte.profil}__}">Agent de station</span>) |
+                <!-- La déconnexion est un POST, pour être protégée par le jeton CSRF -->
+                <form class="d-inline" method="post" th:action="@{/deconnexion}">
+                    <button type="submit" class="btn btn-link link-light p-0 align-baseline">Déconnectez-vous</button>
+                </form>
+            </div>
+        </div>
+    </nav>
 </header>
 </body>
 </html>

@@ -4,29 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Modifier un incident — Downlyzer</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <th:block th:replace="~{fragments/entete :: styles}"></th:block>
 </head>
 <body>
 <header th:replace="~{fragments/entete :: entete}"></header>
-<main>
-    <p><a th:href="@{/incidents/{id}(id=${incident.id})}" th:text="'← Incident n° ' + ${incident.id}">← Incident n° 12</a></p>
+<main class="container pb-4">
+    <a class="lien-retour" th:href="@{/incidents/{id}(id=${incident.id})}" th:text="'← Incident n° ' + ${incident.id}">← Incident n° 12</a>
 
-    <h1>Modifier la description</h1>
-    <p>
+    <h1 class="h2">Modifier la description</h1>
+    <p class="text-body-secondary">
         <strong th:text="${incident.equipement.reference} + ' — ' + ${incident.equipement.libelle}">ASC-001 — Ascenseur quai A</strong>,
         station <span th:text="${incident.equipement.station.nom}">Gare Centrale</span>
     </p>
 
-    <form method="post" th:action="@{/incidents/{id}/description(id=${incident.id})}" th:object="${modification}">
-        <label for="description">Description de la panne</label>
-        <textarea id="description" th:field="*{description}" rows="5" required minlength="10" maxlength="1000"></textarea>
-        <p class="message-erreur" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">
-            La description doit contenir entre 10 et 1000 caractères.
-        </p>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post" th:action="@{/incidents/{id}/description(id=${incident.id})}" th:object="${modification}">
+                <div class="mb-3">
+                    <label class="form-label" for="description">Description de la panne</label>
+                    <textarea class="form-control" th:errorclass="is-invalid" id="description" th:field="*{description}"
+                              rows="5" required minlength="10" maxlength="1000"></textarea>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">
+                        La description doit contenir entre 10 et 1000 caractères.
+                    </div>
+                </div>
 
-        <button type="submit">Enregistrer</button>
-        <a th:href="@{/incidents/{id}(id=${incident.id})}">Annuler</a>
-    </form>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+                <a class="btn btn-outline-secondary" th:href="@{/incidents/{id}(id=${incident.id})}">Annuler</a>
+            </form>
+        </div>
+    </div>
 </main>
 </body>
 </html>

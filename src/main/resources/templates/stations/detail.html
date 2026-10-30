@@ -4,34 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${station.nom} + ' — Downlyzer'">Station — Downlyzer</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <th:block th:replace="~{fragments/entete :: styles}"></th:block>
 </head>
 <body>
 <header th:replace="~{fragments/entete :: entete}"></header>
-<main>
-    <p><a th:href="@{/stations}">← Toutes les stations</a></p>
-    <h1 th:text="${station.nom}">Gare Centrale</h1>
+<main class="container pb-4">
+    <a class="lien-retour" th:href="@{/stations}">← Toutes les stations</a>
+    <h1 class="h2 mb-3" th:text="${station.nom}">Gare Centrale</h1>
 
-    <p th:if="${equipements.isEmpty()}">Aucun équipement n'est installé dans cette station.</p>
+    <p class="text-body-secondary" th:if="${equipements.isEmpty()}">Aucun équipement n'est installé dans cette station.</p>
 
-    <table th:unless="${equipements.isEmpty()}">
-        <thead>
-        <tr>
-            <th>Référence</th>
-            <th>Équipement</th>
-            <th>Type</th>
-            <th>État</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="equipement : ${equipements}">
-            <td><a th:href="@{/equipements/{id}(id=${equipement.id})}" th:text="${equipement.reference}">ASC-001</a></td>
-            <td th:text="${equipement.libelle}">Ascenseur quai A</td>
-            <td th:text="${equipement.typeEquipement.libelle}">Ascenseur</td>
-            <td th:text="#{etat.__${equipement.etat}__}">En service</td>
-        </tr>
-        </tbody>
-    </table>
+    <div class="card shadow-sm" th:unless="${equipements.isEmpty()}">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                <tr>
+                    <th>Référence</th>
+                    <th>Équipement</th>
+                    <th>Type</th>
+                    <th>État</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="equipement : ${equipements}">
+                    <td><a th:href="@{/equipements/{id}(id=${equipement.id})}" th:text="${equipement.reference}">ASC-001</a></td>
+                    <td th:text="${equipement.libelle}">Ascenseur quai A</td>
+                    <td th:text="${equipement.typeEquipement.libelle}">Ascenseur</td>
+                    <td><span class="badge" th:classappend="'etat-' + ${equipement.etat}"
+                              th:text="#{etat.__${equipement.etat}__}">En service</span></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </main>
 </body>
 </html>

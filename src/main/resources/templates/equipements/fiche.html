@@ -4,55 +4,66 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${equipement.reference} + ' — Downlyzer'">Équipement — Downlyzer</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <th:block th:replace="~{fragments/entete :: styles}"></th:block>
 </head>
 <body>
 <header th:replace="~{fragments/entete :: entete}"></header>
-<main>
-    <p>
-        <a th:href="@{/stations/{id}(id=${equipement.station.id})}"
-           th:text="'← ' + ${equipement.station.nom}">← Gare Centrale</a>
-    </p>
+<main class="container pb-4">
+    <a class="lien-retour" th:href="@{/stations/{id}(id=${equipement.station.id})}"
+       th:text="'← ' + ${equipement.station.nom}">← Gare Centrale</a>
 
-    <h1 th:text="${equipement.reference} + ' — ' + ${equipement.libelle}">ASC-001 — Ascenseur quai A</h1>
+    <h1 class="h2 mb-3" th:text="${equipement.reference} + ' — ' + ${equipement.libelle}">ASC-001 — Ascenseur quai A</h1>
 
-    <dl>
-        <dt>Station</dt>
-        <dd th:text="${equipement.station.nom}">Gare Centrale</dd>
-        <dt>Type</dt>
-        <dd th:text="${equipement.typeEquipement.libelle}">Ascenseur</dd>
-        <dt>État</dt>
-        <dd th:text="#{etat.__${equipement.etat}__}">En service</dd>
-    </dl>
+    <div class="alert alert-success" role="status" th:if="${succes}" th:text="${succes}">L'incident a bien été déclaré.</div>
 
-    <p class="message-succes" role="status" th:if="${succes}" th:text="${succes}">L'incident a bien été déclaré.</p>
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Station</dt>
+                <dd class="col-sm-9" th:text="${equipement.station.nom}">Gare Centrale</dd>
+                <dt class="col-sm-3">Type</dt>
+                <dd class="col-sm-9" th:text="${equipement.typeEquipement.libelle}">Ascenseur</dd>
+                <dt class="col-sm-3">État</dt>
+                <dd class="col-sm-9 mb-0">
+                    <span class="badge" th:classappend="'etat-' + ${equipement.etat}"
+                          th:text="#{etat.__${equipement.etat}__}">En service</span>
+                </dd>
+            </dl>
+        </div>
+    </div>
 
-    <h2>Incidents</h2>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0">Incidents</h2>
+        <a class="btn btn-primary" th:href="@{/equipements/{id}/incidents/nouveau(id=${equipement.id})}">Déclarer un incident</a>
+    </div>
 
-    <p><a th:href="@{/equipements/{id}/incidents/nouveau(id=${equipement.id})}">Déclarer un incident</a></p>
+    <p class="text-body-secondary" th:if="${incidents.isEmpty()}">Aucun incident n'a été signalé sur cet équipement.</p>
 
-    <p th:if="${incidents.isEmpty()}">Aucun incident n'a été signalé sur cet équipement.</p>
-
-    <table th:unless="${incidents.isEmpty()}">
-        <thead>
-        <tr>
-            <th>Ouvert le</th>
-            <th>Description</th>
-            <th>Statut</th>
-            <th>Prestataire</th>
-            <th>Résolu le</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="incident : ${incidents}">
-            <td th:text="${#temporals.format(incident.dateOuverture, 'dd/MM/yyyy HH:mm')}">14/10/2026 08:00</td>
-            <td><a th:href="@{/incidents/{id}(id=${incident.id})}" th:text="${incident.description}">Ascenseur bloqué</a></td>
-            <td th:text="#{statut.__${incident.statut}__}">Non affecté</td>
-            <td th:text="${incident.prestataire?.nom} ?: '—'">Ascenso Maintenance</td>
-            <td th:text="${incident.dateResolution != null} ? ${#temporals.format(incident.dateResolution, 'dd/MM/yyyy HH:mm')} : '—'">—</td>
-        </tr>
-        </tbody>
-    </table>
+    <div class="card shadow-sm" th:unless="${incidents.isEmpty()}">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                <tr>
+                    <th>Ouvert le</th>
+                    <th>Description</th>
+                    <th>Statut</th>
+                    <th>Prestataire</th>
+                    <th>Résolu le</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="incident : ${incidents}">
+                    <td class="text-nowrap" th:text="${#temporals.format(incident.dateOuverture, 'dd/MM/yyyy HH:mm')}">14/10/2026 08:00</td>
+                    <td><a th:href="@{/incidents/{id}(id=${incident.id})}" th:text="${incident.description}">Ascenseur bloqué</a></td>
+                    <td><span class="badge" th:classappend="'statut-' + ${incident.statut}"
+                              th:text="#{statut.__${incident.statut}__}">Non affecté</span></td>
+                    <td th:text="${incident.prestataire?.nom} ?: '—'">Ascenso Maintenance</td>
+                    <td class="text-nowrap" th:text="${incident.dateResolution != null} ? ${#temporals.format(incident.dateResolution, 'dd/MM/yyyy HH:mm')} : '—'">—</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </main>
 </body>
 </html>

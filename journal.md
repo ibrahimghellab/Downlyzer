@@ -293,6 +293,12 @@ Les transitions d'état passent par des requêtes POST vers des URL d'action (`/
   - Limite : ce contrôleur répond toujours en HTML. Une URL inconnue sous `/api` recevra donc une page HTML ; à revoir avec l'API.
   - L'API aura son propre gestionnaire, qui répondra en JSON : les deux clients n'attendent pas le même format.
 
+### Interface
+- **Bootstrap 5.3.3**, chargé depuis un CDN comme dans le TP : mise en page cohérente sur toutes les pages (barre d'en-tête, cartes, tableaux, formulaires, alertes) sans écrire de CSS. Inconvénient : il faut un accès à Internet pour que les pages soient mises en forme.
+- Les deux feuilles de style sont déclarées une seule fois, dans le fragment `styles` de `fragments/entete.html`, inclus par chaque page.
+- `static/css/style.css` ne contient que ce qui est propre à Downlyzer, notamment la couleur des badges d'état et de statut. La classe d'un badge reprend le nom de la constante stockée en base (`etat-HORS_SERVICE`, `statut-NON_AFFECTE`…) : la couleur est donc choisie par la feuille de style, sans condition dans les templates.
+- Les erreurs de saisie sont affichées sous le champ concerné, qui est entouré en rouge (`th:errorclass="is-invalid"`).
+
 ### SOLID
 *À compléter* (principe(s) appliqué(s) : où, pourquoi ; principes écartés : pourquoi).
 
@@ -345,3 +351,38 @@ Fonctionnalités retenues : pistes **8** et **2**. La piste **4** est une réali
 - Plus grande difficulté et comment elle a été surmontée : *à compléter*
 - Fonctionnalités non réalisées et pourquoi : *à compléter*
 - Trois points à retenir du cours et du projet : *à compléter*
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Utilisation de WebMvcTest pour tester les contrôleurs web, avec des mocks pour les services et un contexte Spring minimal.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

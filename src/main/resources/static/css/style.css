@@ -1,0 +1,41 @@
+/* Complète Bootstrap pour ce qui est propre à Downlyzer */
+
+body {
+    background-color: var(--bs-tertiary-bg);
+}
+
+/* Couleur des badges d'état et de statut : la classe porte le nom de la constante stockée en base */
+.badge.etat-EN_SERVICE,
+.badge.statut-RESOLU {
+    background-color: var(--bs-success);
+}
+
+.badge.etat-DEGRADE,
+.badge.statut-AFFECTE {
+    background-color: var(--bs-warning);
+    color: var(--bs-dark);
+}
+
+.badge.etat-HORS_SERVICE,
+.badge.statut-NON_AFFECTE {
+    background-color: var(--bs-danger);
+}
+
+.lien-retour {
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    color: var(--bs-secondary-color);
+    text-decoration: none;
+}
+
+.lien-retour:hover {
+    color: var(--bs-body-color);
+}
+
+.carte-connexion {
+    max-width: 24rem;
+}
+
+.carte-erreur {
+    max-width: 36rem;
+}

@@ -4,27 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Stations — Downlyzer</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <th:block th:replace="~{fragments/entete :: styles}"></th:block>
 </head>
 <body>
 <header th:replace="~{fragments/entete :: entete}"></header>
-<main>
-    <h1>Stations du réseau</h1>
+<main class="container pb-4">
+    <h1 class="h2 mb-3">Stations du réseau</h1>
 
-    <table>
-        <thead>
-        <tr>
-            <th>Code</th>
-            <th>Station</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="station : ${stations}">
-            <td th:text="${station.code}">GCE</td>
-            <td><a th:href="@{/stations/{id}(id=${station.id})}" th:text="${station.nom}">Gare Centrale</a></td>
-        </tr>
-        </tbody>
-    </table>
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Station</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="station : ${stations}">
+                    <td class="text-body-secondary" th:text="${station.code}">GCE</td>
+                    <td><a th:href="@{/stations/{id}(id=${station.id})}" th:text="${station.nom}">Gare Centrale</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </main>
 </body>
 </html>

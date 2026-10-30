@@ -4,31 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Déclarer un incident — Downlyzer</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <th:block th:replace="~{fragments/entete :: styles}"></th:block>
 </head>
 <body>
 <header th:replace="~{fragments/entete :: entete}"></header>
-<main>
-    <p><a th:href="@{/equipements/{id}(id=${equipement.id})}" th:text="'← ' + ${equipement.reference}">← ASC-001</a></p>
+<main class="container pb-4">
+    <a class="lien-retour" th:href="@{/equipements/{id}(id=${equipement.id})}" th:text="'← ' + ${equipement.reference}">← ASC-001</a>
 
-    <h1>Déclarer un incident</h1>
-    <p>
+    <h1 class="h2">Déclarer un incident</h1>
+    <p class="text-body-secondary">
         <strong th:text="${equipement.reference} + ' — ' + ${equipement.libelle}">ASC-001 — Ascenseur quai A</strong>,
         station <span th:text="${equipement.station.nom}">Gare Centrale</span>
     </p>
 
-    <!-- th:action ajoute le jeton CSRF ; th:object relie le formulaire à l'objet « declaration » du modèle -->
-    <form method="post" th:action="@{/equipements/{id}/incidents(id=${equipement.id})}" th:object="${declaration}">
-        <label for="description">Description de la panne</label>
-        <textarea id="description" th:field="*{description}" rows="5" required minlength="10" maxlength="1000"
-                  placeholder="Ce que vous avez constaté : symptôme, emplacement exact…"></textarea>
-        <p class="message-erreur" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">
-            La description doit contenir entre 10 et 1000 caractères.
-        </p>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <!-- th:action ajoute le jeton CSRF ; th:object relie le formulaire à l'objet « declaration » du modèle -->
+            <form method="post" th:action="@{/equipements/{id}/incidents(id=${equipement.id})}" th:object="${declaration}">
+                <div class="mb-3">
+                    <label class="form-label" for="description">Description de la panne</label>
+                    <textarea class="form-control" th:errorclass="is-invalid" id="description" th:field="*{description}"
+                              rows="5" required minlength="10" maxlength="1000"
+                              placeholder="Ce que vous avez constaté : symptôme, emplacement exact…"></textarea>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">
+                        La description doit contenir entre 10 et 1000 caractères.
+                    </div>
+                </div>
 
-        <button type="submit">Déclarer l'incident</button>
-        <a th:href="@{/equipements/{id}(id=${equipement.id})}">Annuler</a>
-    </form>
+                <button type="submit" class="btn btn-primary">Déclarer l'incident</button>
+                <a class="btn btn-outline-secondary" th:href="@{/equipements/{id}(id=${equipement.id})}">Annuler</a>
+            </form>
+        </div>
+    </div>
 </main>
 </body>
 </html>

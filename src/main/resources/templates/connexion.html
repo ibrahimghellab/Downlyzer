@@ -4,33 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Connexion — Downlyzer</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <th:block th:replace="~{fragments/entete :: styles}"></th:block>
 </head>
 <body>
-<main class="connexion">
-    <h1>Downlyzer</h1>
-    <p>Supervision des équipements et suivi des incidents</p>
+<main class="container d-flex align-items-center justify-content-center min-vh-100">
+    <div class="card shadow-sm w-100 carte-connexion">
+        <div class="card-body p-4">
+            <h1 class="h3 mb-1">Downlyzer</h1>
+            <p class="text-body-secondary">Supervision des équipements et suivi des incidents</p>
 
-    <!-- Spring Security redirige vers /connexion?error quand le login ou le mot de passe est faux (F1) -->
-    <p class="message-erreur" role="alert" th:if="${param.error}">
-        Identifiant ou mot de passe incorrect.
-    </p>
+            <!-- Spring Security redirige vers /connexion?error quand le login ou le mot de passe est faux (F1) -->
+            <div class="alert alert-danger" role="alert" th:if="${param.error}">
+                Identifiant ou mot de passe incorrect.
+            </div>
 
-    <!-- Spring Security redirige vers /connexion?logout après « Déconnectez-vous » -->
-    <p class="message-info" role="status" th:if="${param.logout}">
-        Vous êtes déconnecté.
-    </p>
+            <!-- Spring Security redirige vers /connexion?logout après « Déconnectez-vous » -->
+            <div class="alert alert-info" role="status" th:if="${param.logout}">
+                Vous êtes déconnecté.
+            </div>
 
-    <!-- th:action ajoute automatiquement le jeton CSRF exigé par Spring Security -->
-    <form method="post" th:action="@{/connexion}">
-        <label for="username">Identifiant</label>
-        <input type="text" id="username" name="username" autocomplete="username" required autofocus>
-
-        <label for="password">Mot de passe</label>
-        <input type="password" id="password" name="password" autocomplete="current-password" required>
-
-        <button type="submit">Se connecter</button>
-    </form>
+            <!-- th:action ajoute automatiquement le jeton CSRF exigé par Spring Security -->
+            <form method="post" th:action="@{/connexion}">
+                <div class="mb-3">
+                    <label class="form-label" for="username">Identifiant</label>
+                    <input class="form-control" type="text" id="username" name="username" autocomplete="username"
+                           required autofocus>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="password">Mot de passe</label>
+                    <input class="form-control" type="password" id="password" name="password"
+                           autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Se connecter</button>
+            </form>
+        </div>
+    </div>
 </main>
 </body>
 </html>

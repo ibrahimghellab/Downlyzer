@@ -4,81 +4,103 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="'Incident n° ' + ${incident.id} + ' — Downlyzer'">Incident — Downlyzer</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <th:block th:replace="~{fragments/entete :: styles}"></th:block>
 </head>
 <body>
 <header th:replace="~{fragments/entete :: entete}"></header>
-<main>
-    <p>
-        <a th:href="@{/equipements/{id}(id=${incident.equipement.id})}"
-           th:text="'← ' + ${incident.equipement.reference}">← ASC-001</a>
-    </p>
+<main class="container pb-4">
+    <a class="lien-retour" th:href="@{/equipements/{id}(id=${incident.equipement.id})}"
+       th:text="'← ' + ${incident.equipement.reference}">← ASC-001</a>
 
-    <h1 th:text="'Incident n° ' + ${incident.id}">Incident n° 12</h1>
+    <div class="d-flex align-items-center gap-3 mb-3">
+        <h1 class="h2 mb-0" th:text="'Incident n° ' + ${incident.id}">Incident n° 12</h1>
+        <span class="badge fs-6" th:classappend="'statut-' + ${incident.statut}"
+              th:text="#{statut.__${incident.statut}__}">Non affecté</span>
+    </div>
 
-    <p class="message-succes" role="status" th:if="${succes}" th:text="${succes}">La description a bien été modifiée.</p>
+    <div class="alert alert-success" role="status" th:if="${succes}" th:text="${succes}">La description a bien été modifiée.</div>
 
-    <h2>Description</h2>
-    <p th:text="${incident.description}">Ascenseur bloqué entre deux étages.</p>
-    <p th:if="${descriptionModifiable}">
-        <a th:href="@{/incidents/{id}/description(id=${incident.id})}">Modifier la description</a>
-    </p>
+    <div class="card shadow-sm mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Description</h2>
+            <a class="btn btn-outline-primary btn-sm" th:if="${descriptionModifiable}"
+               th:href="@{/incidents/{id}/description(id=${incident.id})}">Modifier la description</a>
+        </div>
+        <div class="card-body">
+            <p th:text="${incident.description}">Ascenseur bloqué entre deux étages.</p>
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Équipement</dt>
+                <dd class="col-sm-9" th:text="${incident.equipement.reference} + ' — ' + ${incident.equipement.libelle}">ASC-001 — Ascenseur quai A</dd>
+                <dt class="col-sm-3">Station</dt>
+                <dd class="col-sm-9">
+                    <a th:href="@{/stations/{id}(id=${incident.equipement.station.id})}"
+                       th:text="${incident.equipement.station.nom}">Gare Centrale</a>
+                </dd>
+                <dt class="col-sm-3">Signalé par</dt>
+                <dd class="col-sm-9">
+                    <span th:text="#{source.__${incident.source}__}">Saisie manuelle</span>
+                    <span th:if="${incident.declarant != null}"
+                          th:text="'— ' + ${incident.declarant.prenom} + ' ' + ${incident.declarant.nom}">— Karim Benali</span>
+                </dd>
+                <dt class="col-sm-3">Ouvert le</dt>
+                <dd class="col-sm-9" th:text="${#temporals.format(incident.dateOuverture, 'dd/MM/yyyy HH:mm')}">14/10/2026 08:00</dd>
+                <dt class="col-sm-3" th:text="${incident.estResolu()} ? 'Durée avant résolution' : 'Ouvert depuis'">Ouvert depuis</dt>
+                <dd class="col-sm-9 mb-0" th:text="${dureeOuverture.toDays()} + ' j ' + ${dureeOuverture.toHoursPart()} + ' h ' + ${dureeOuverture.toMinutesPart()} + ' min'">2 j 5 h 12 min</dd>
+            </dl>
+        </div>
+    </div>
 
-    <dl>
-        <dt>Équipement</dt>
-        <dd th:text="${incident.equipement.reference} + ' — ' + ${incident.equipement.libelle}">ASC-001 — Ascenseur quai A</dd>
-        <dt>Station</dt>
-        <dd>
-            <a th:href="@{/stations/{id}(id=${incident.equipement.station.id})}"
-               th:text="${incident.equipement.station.nom}">Gare Centrale</a>
-        </dd>
-        <dt>Statut</dt>
-        <dd th:text="#{statut.__${incident.statut}__}">Non affecté</dd>
-        <dt>Signalé par</dt>
-        <dd>
-            <span th:text="#{source.__${incident.source}__}">Saisie manuelle</span>
-            <span th:if="${incident.declarant != null}"
-                  th:text="'— ' + ${incident.declarant.prenom} + ' ' + ${incident.declarant.nom}">— Karim Benali</span>
-        </dd>
-        <dt>Ouvert le</dt>
-        <dd th:text="${#temporals.format(incident.dateOuverture, 'dd/MM/yyyy HH:mm')}">14/10/2026 08:00</dd>
-        <dt th:text="${incident.estResolu()} ? 'Durée avant résolution' : 'Ouvert depuis'">Ouvert depuis</dt>
-        <dd th:text="${dureeOuverture.toDays()} + ' j ' + ${dureeOuverture.toHoursPart()} + ' h ' + ${dureeOuverture.toMinutesPart()} + ' min'">2 j 5 h 12 min</dd>
-    </dl>
-
-    <h2>Prise en charge</h2>
-    <p th:if="${incident.prestataire == null}"
-       th:text="${incident.estResolu()} ? 'Aucun prestataire n\'est intervenu.' : 'Aucun prestataire n\'a encore été affecté.'">
-        Aucun prestataire n'a encore été affecté.</p>
-    <dl th:if="${incident.prestataire != null}">
-        <dt>Prestataire</dt>
-        <dd th:text="${incident.prestataire.nom}">Ascenso Maintenance</dd>
-        <dt>Contact</dt>
-        <dd th:text="${incident.prestataire.email} + ' — ' + ${incident.prestataire.telephone}">contact@ascenso.fr — 01 23 45 67 89</dd>
-        <dt>Affecté le</dt>
-        <dd th:text="${#temporals.format(incident.dateAffectation, 'dd/MM/yyyy HH:mm')}">14/10/2026 10:30</dd>
-    </dl>
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Prise en charge</h2>
+        </div>
+        <div class="card-body">
+            <p class="text-body-secondary mb-0" th:if="${incident.prestataire == null}"
+               th:text="${incident.estResolu()} ? 'Aucun prestataire n\'est intervenu.' : 'Aucun prestataire n\'a encore été affecté.'">
+                Aucun prestataire n'a encore été affecté.</p>
+            <dl class="row mb-0" th:if="${incident.prestataire != null}">
+                <dt class="col-sm-3">Prestataire</dt>
+                <dd class="col-sm-9" th:text="${incident.prestataire.nom}">Ascenso Maintenance</dd>
+                <dt class="col-sm-3">Contact</dt>
+                <dd class="col-sm-9" th:text="${incident.prestataire.email} + ' — ' + ${incident.prestataire.telephone}">contact@ascenso.fr — 01 23 45 67 89</dd>
+                <dt class="col-sm-3">Affecté le</dt>
+                <dd class="col-sm-9 mb-0" th:text="${#temporals.format(incident.dateAffectation, 'dd/MM/yyyy HH:mm')}">14/10/2026 10:30</dd>
+            </dl>
+        </div>
+    </div>
 
     <th:block th:if="${incident.estResolu()}">
-        <h2>Résolution</h2>
-        <dl>
-            <dt>Résolu le</dt>
-            <dd th:text="${#temporals.format(incident.dateResolution, 'dd/MM/yyyy HH:mm')}">15/10/2026 16:00</dd>
-            <dt>Commentaire</dt>
-            <dd th:text="${incident.commentaireResolution} ?: '—'">Câble de traction remplacé.</dd>
-        </dl>
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h2 class="h5 mb-0">Résolution</h2>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-3">Résolu le</dt>
+                    <dd class="col-sm-9" th:text="${#temporals.format(incident.dateResolution, 'dd/MM/yyyy HH:mm')}">15/10/2026 16:00</dd>
+                    <dt class="col-sm-3">Commentaire</dt>
+                    <dd class="col-sm-9 mb-0" th:text="${incident.commentaireResolution} ?: '—'">Câble de traction remplacé.</dd>
+                </dl>
+            </div>
+        </div>
 
-        <h2>Évaluation du prestataire</h2>
-        <p th:if="${!incident.estEvaluable()}">Résolu sans prestataire : il n'y a pas d'intervention à évaluer.</p>
-        <p th:if="${incident.estEvaluable() and evaluation == null}">L'intervention n'a pas encore été évaluée.</p>
-        <dl th:if="${evaluation != null}">
-            <dt>Note</dt>
-            <dd th:text="${evaluation.note} + ' / 5'">4 / 5</dd>
-            <dt>Commentaire</dt>
-            <dd th:text="${evaluation.commentaire} ?: '—'">Intervention rapide.</dd>
-            <dt>Évalué le</dt>
-            <dd th:text="${#temporals.format(evaluation.dateEvaluation, 'dd/MM/yyyy')}">16/10/2026</dd>
-        </dl>
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h2 class="h5 mb-0">Évaluation du prestataire</h2>
+            </div>
+            <div class="card-body">
+                <p class="text-body-secondary mb-0" th:if="${!incident.estEvaluable()}">Résolu sans prestataire : il n'y a pas d'intervention à évaluer.</p>
+                <p class="text-body-secondary mb-0" th:if="${incident.estEvaluable() and evaluation == null}">L'intervention n'a pas encore été évaluée.</p>
+                <dl class="row mb-0" th:if="${evaluation != null}">
+                    <dt class="col-sm-3">Note</dt>
+                    <dd class="col-sm-9" th:text="${evaluation.note} + ' / 5'">4 / 5</dd>
+                    <dt class="col-sm-3">Commentaire</dt>
+                    <dd class="col-sm-9" th:text="${evaluation.commentaire} ?: '—'">Intervention rapide.</dd>
+                    <dt class="col-sm-3">Évalué le</dt>
+                    <dd class="col-sm-9 mb-0" th:text="${#temporals.format(evaluation.dateEvaluation, 'dd/MM/yyyy')}">16/10/2026</dd>
+                </dl>
+            </div>
+        </div>
     </th:block>
 </main>
 </body>
