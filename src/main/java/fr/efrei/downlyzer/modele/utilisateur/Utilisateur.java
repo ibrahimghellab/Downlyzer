@@ -2,8 +2,6 @@ package fr.efrei.downlyzer.modele.utilisateur;
 
 import fr.efrei.downlyzer.modele.Profil;
 import jakarta.persistence.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "utilisateur")

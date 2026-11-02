@@ -4,8 +4,6 @@ import fr.efrei.downlyzer.modele.EtatEquipement;
 import fr.efrei.downlyzer.modele.station.Station;
 import fr.efrei.downlyzer.modele.typeequipement.TypeEquipement;
 import jakarta.persistence.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "equipement")

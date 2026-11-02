@@ -1,6 +1,5 @@
 package fr.efrei.downlyzer.controleur.web;
 
-import fr.efrei.downlyzer.modele.equipement.Equipement;
 import fr.efrei.downlyzer.service.StationService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
