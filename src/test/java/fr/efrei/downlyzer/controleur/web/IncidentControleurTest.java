@@ -1,11 +1,13 @@
 package fr.efrei.downlyzer.controleur.web;
 
 import fr.efrei.downlyzer.exception.ActionNonAutoriseeException;
+import fr.efrei.downlyzer.exception.DonneeInvalideException;
 import fr.efrei.downlyzer.exception.IncidentIntrouvableException;
 import fr.efrei.downlyzer.exception.TransitionInterditeException;
 import fr.efrei.downlyzer.modele.Profil;
 import fr.efrei.downlyzer.modele.equipement.Equipement;
 import fr.efrei.downlyzer.modele.incident.Incident;
+import fr.efrei.downlyzer.modele.prestataire.Prestataire;
 import fr.efrei.downlyzer.modele.station.Station;
 import fr.efrei.downlyzer.modele.utilisateur.Utilisateur;
 import fr.efrei.downlyzer.securite.SecuriteConfiguration;
@@ -23,6 +25,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -185,6 +188,98 @@ class IncidentControleurTest {
                 .andExpect(status().isForbidden());
 
         verify(incidentService, never()).modifierDescription(anyLong(), anyString(), any());
+    }
+
+    @Test
+    void leResponsableVoitLesFormulairesDAffectationEtDeResolution() throws Exception {
+        Incident incident = incidentNonAffecte();
+        Prestataire ascenso = new Prestataire();
+        ascenso.setNom("Ascenso Maintenance");
+        when(incidentService.trouverIncident(1L)).thenReturn(incident);
+        when(incidentService.calculerDureeOuverture(incident)).thenReturn(Duration.ofHours(47));
+        when(incidentService.peutAffecterEtResoudre(incident, Profil.RESPONSABLE)).thenReturn(true);
+        when(incidentService.listerPrestatairesAffectables(incident)).thenReturn(List.of(ascenso));
+
+        mockMvc.perform(get("/incidents/1").with(connecte(Profil.RESPONSABLE)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Ascenso Maintenance")))
+                .andExpect(content().string(containsString("Déclarer résolu")));
+    }
+
+    @Test
+    void lAgentNeVoitPasLesFormulairesDAffectationEtDeResolution() throws Exception {
+        Incident incident = incidentNonAffecte();
+        when(incidentService.trouverIncident(1L)).thenReturn(incident);
+        when(incidentService.calculerDureeOuverture(incident)).thenReturn(Duration.ofHours(47));
+
+        mockMvc.perform(get("/incidents/1").with(connecte(Profil.AGENT)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("Déclarer résolu"))))
+                .andExpect(content().string(not(containsString("Affecter"))));
+    }
+
+    @Test
+    void unResponsableAffecteUnPrestataireEtRevientAuDetail() throws Exception {
+        Prestataire ascenso = new Prestataire();
+        ascenso.setNom("Ascenso Maintenance");
+        when(incidentService.affecterPrestataire(1L, 5L)).thenReturn(ascenso);
+
+        mockMvc.perform(post("/incidents/1/affectation").with(connecte(Profil.RESPONSABLE)).with(csrf())
+                        .param("prestataireId", "5"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/incidents/1"))
+                .andExpect(flash().attribute("succes", "L'incident est affecté à Ascenso Maintenance."));
+    }
+
+    @Test
+    void uneAffectationSansPrestataireReafficheLeDetailAvecLErreur() throws Exception {
+        Incident incident = incidentNonAffecte();
+        when(incidentService.trouverIncident(1L)).thenReturn(incident);
+        when(incidentService.calculerDureeOuverture(incident)).thenReturn(Duration.ofHours(47));
+        when(incidentService.peutAffecterEtResoudre(incident, Profil.RESPONSABLE)).thenReturn(true);
+        when(incidentService.listerPrestatairesAffectables(incident)).thenReturn(List.of(new Prestataire()));
+
+        mockMvc.perform(post("/incidents/1/affectation").with(connecte(Profil.RESPONSABLE)).with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("incidents/detail"))
+                .andExpect(model().attributeHasFieldErrors("affectation", "prestataireId"))
+                .andExpect(content().string(containsString("Choisissez un prestataire.")));
+
+        verify(incidentService, never()).affecterPrestataire(anyLong(), anyLong());
+    }
+
+    @Test
+    void unPrestataireNonProposeObtientUne400() throws Exception {
+        when(incidentService.affecterPrestataire(1L, 4L))
+                .thenThrow(new DonneeInvalideException("Le prestataire « InfoAffichage Pro » ne peut pas être affecté."));
+
+        mockMvc.perform(post("/incidents/1/affectation").with(connecte(Profil.RESPONSABLE)).with(csrf())
+                        .param("prestataireId", "4"))
+                .andExpect(status().isBadRequest())
+                .andExpect(view().name("erreur"));
+    }
+
+    @Test
+    void unAgentNePeutNiAffecterNiResoudre() throws Exception {
+        mockMvc.perform(post("/incidents/1/affectation").with(connecte(Profil.AGENT)).with(csrf())
+                        .param("prestataireId", "5"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/incidents/1/resolution").with(connecte(Profil.AGENT)).with(csrf()))
+                .andExpect(status().isForbidden());
+
+        verify(incidentService, never()).affecterPrestataire(anyLong(), anyLong());
+        verify(incidentService, never()).resoudreIncident(anyLong(), any());
+    }
+
+    @Test
+    void unResponsableDeclareLIncidentResoluEtRevientAuDetail() throws Exception {
+        mockMvc.perform(post("/incidents/1/resolution").with(connecte(Profil.RESPONSABLE)).with(csrf())
+                        .param("commentaire", "Câble de traction remplacé"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/incidents/1"))
+                .andExpect(flash().attribute("succes", "L'incident est déclaré résolu."));
+
+        verify(incidentService).resoudreIncident(1L, "Câble de traction remplacé");
     }
 
     @Test

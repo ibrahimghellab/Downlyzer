@@ -66,6 +66,51 @@
                 <dt class="col-sm-3">Affecté le</dt>
                 <dd class="col-sm-9 mb-0" th:text="${#temporals.format(incident.dateAffectation, 'dd/MM/yyyy HH:mm')}">14/10/2026 10:30</dd>
             </dl>
+
+            <th:block th:if="${affectationEtResolutionPossibles}">
+                <hr>
+                <p class="text-body-secondary mb-0" th:if="${prestataires.isEmpty()}">
+                    Aucun autre prestataire actif n'intervient sur ce type d'équipement.</p>
+                <form class="row g-2 align-items-start" method="post" th:unless="${prestataires.isEmpty()}"
+                      th:action="@{/incidents/{id}/affectation(id=${incident.id})}" th:object="${affectation}">
+                    <div class="col-sm-8">
+                        <label class="visually-hidden" for="prestataireId">Prestataire</label>
+                        <select class="form-select" th:errorclass="is-invalid" id="prestataireId" th:field="*{prestataireId}" required>
+                            <option value="">Choisir un prestataire…</option>
+                            <option th:each="prestataire : ${prestataires}" th:value="${prestataire.id}"
+                                    th:text="${prestataire.nom}">Ascenso Maintenance</option>
+                        </select>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('prestataireId')}" th:errors="*{prestataireId}">
+                            Choisissez un prestataire.
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <button type="submit" class="btn btn-primary w-100"
+                                th:text="${incident.prestataire == null} ? 'Affecter' : 'Réaffecter'">Affecter</button>
+                    </div>
+                </form>
+            </th:block>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4" th:if="${affectationEtResolutionPossibles}">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Déclarer l'incident résolu</h2>
+        </div>
+        <div class="card-body">
+            <form method="post" th:action="@{/incidents/{id}/resolution(id=${incident.id})}" th:object="${resolution}">
+                <div class="mb-3">
+                    <label class="form-label" for="commentaire">Commentaire (facultatif)</label>
+                    <textarea class="form-control" th:errorclass="is-invalid" id="commentaire" th:field="*{commentaire}"
+                              rows="3" maxlength="1000" placeholder="Ce qui a été fait pour remettre l'équipement en service…"></textarea>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('commentaire')}" th:errors="*{commentaire}">
+                        Le commentaire ne doit pas dépasser 1000 caractères.
+                    </div>
+                </div>
+                <p class="small text-body-secondary">La date et l'heure de résolution sont enregistrées automatiquement.
+                    L'équipement repasse en service s'il n'a plus d'autre incident en cours.</p>
+                <button type="submit" class="btn btn-success">Déclarer résolu</button>
+            </form>
         </div>
     </div>
 

@@ -2,6 +2,7 @@ package fr.efrei.downlyzer.securite;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,6 +19,9 @@ public class SecuriteConfiguration {
                         // /error et /favicon.ico libres : sinon Spring Security les mémorise comme page demandée
                         // et y renvoie l'utilisateur juste après la connexion
                         .requestMatchers("/connexion", "/css/**", "/error", "/favicon.ico").permitAll()
+                        // F7-F8 réservées au responsable (RG11) : un agent reçoit un 403, même en forgeant la requête
+                        .requestMatchers(HttpMethod.POST, "/incidents/*/affectation", "/incidents/*/resolution")
+                        .hasRole("RESPONSABLE")
                         .anyRequest().authenticated())
                 .formLogin(connexion -> connexion
                         .loginPage("/connexion")

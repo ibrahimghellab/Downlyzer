@@ -1,6 +1,7 @@
 package fr.efrei.downlyzer.controleur.web;
 
 import fr.efrei.downlyzer.exception.ActionNonAutoriseeException;
+import fr.efrei.downlyzer.exception.DonneeInvalideException;
 import fr.efrei.downlyzer.exception.RessourceIntrouvableException;
 import fr.efrei.downlyzer.exception.TransitionInterditeException;
 import fr.efrei.downlyzer.securite.UtilisateurConnecte;
@@ -37,6 +38,13 @@ public class GestionnaireExceptionsWeb {
     public String transitionInterdite(TransitionInterditeException exception,
                                       @AuthenticationPrincipal UtilisateurConnecte utilisateur, Model model) {
         return afficherErreur(model, utilisateur, "Opération impossible", exception.getMessage());
+    }
+
+    @ExceptionHandler(DonneeInvalideException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public String donneeInvalide(DonneeInvalideException exception,
+                                 @AuthenticationPrincipal UtilisateurConnecte utilisateur, Model model) {
+        return afficherErreur(model, utilisateur, "Donnée invalide", exception.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
