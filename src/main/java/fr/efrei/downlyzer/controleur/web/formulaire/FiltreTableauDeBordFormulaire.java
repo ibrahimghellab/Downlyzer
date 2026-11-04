@@ -3,7 +3,7 @@ package fr.efrei.downlyzer.controleur.web.formulaire;
 import fr.efrei.downlyzer.modele.NiveauAttention;
 import fr.efrei.downlyzer.service.OrdreTableauDeBord;
 
-// Filtres du tableau de bord (F11), transmis dans l'URL : un champ vide signifie « tous »
+// filtres passés dans l'url, un champ vide = tous
 public class FiltreTableauDeBordFormulaire {
 
     private Long stationId;

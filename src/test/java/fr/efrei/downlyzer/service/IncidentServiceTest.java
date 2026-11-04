@@ -2,6 +2,9 @@ package fr.efrei.downlyzer.service;
 
 import fr.efrei.downlyzer.exception.ActionNonAutoriseeException;
 import fr.efrei.downlyzer.exception.DonneeInvalideException;
+import fr.efrei.downlyzer.modele.SourceIncident;
+import fr.efrei.downlyzer.exception.IncidentDejaOuvertException;
+import fr.efrei.downlyzer.exception.EquipementIntrouvableException;
 import fr.efrei.downlyzer.exception.IncidentIntrouvableException;
 import fr.efrei.downlyzer.exception.TransitionInterditeException;
 import fr.efrei.downlyzer.modele.EtatEquipement;
@@ -18,6 +21,7 @@ import fr.efrei.downlyzer.modele.utilisateur.Utilisateur;
 import fr.efrei.downlyzer.modele.utilisateur.UtilisateurRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -31,9 +35,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
-// Règles métier testées sans base de données : les repositories sont simulés et l'horloge est figée
+// sans base : repositories simulés et horloge figée
 class IncidentServiceTest {
 
     private static final LocalDateTime MAINTENANT = LocalDateTime.of(2026, 10, 20, 12, 0);
@@ -110,6 +116,55 @@ class IncidentServiceTest {
         assertThat(incident.getStatut()).isEqualTo(StatutIncident.NON_AFFECTE);
         assertThat(incident.getDateOuverture()).isEqualTo(MAINTENANT);
         assertThat(equipement.getEtat()).isEqualTo(EtatEquipement.HORS_SERVICE);
+    }
+
+    @Test
+    void unCapteurDeclareUnIncidentSansDeclarantEtMetLEquipementHorsService() {
+        equipement.setEtat(EtatEquipement.EN_SERVICE);
+        when(equipementRepository.findByReference("ASC-004")).thenReturn(Optional.of(equipement));
+        when(incidentRepository.save(any())).thenAnswer(appel -> appel.getArgument(0));
+
+        Incident incident = incidentService.declarerParCapteur("ASC-004", "Porte bloquée en position ouverte");
+
+        assertThat(incident.getSource()).isEqualTo(SourceIncident.CAPTEUR);
+        assertThat(incident.getDeclarant()).isNull();
+        assertThat(incident.getStatut()).isEqualTo(StatutIncident.NON_AFFECTE);
+        assertThat(incident.getDateOuverture()).isEqualTo(MAINTENANT);
+        assertThat(equipement.getEtat()).isEqualTo(EtatEquipement.HORS_SERVICE);
+    }
+
+    @Test
+    void unCapteurQuiDesigneUneReferenceInconnueEstSignale() {
+        when(equipementRepository.findByReference("XXX-999")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> incidentService.declarerParCapteur("XXX-999", "Porte bloquée en position ouverte"))
+                .isInstanceOf(EquipementIntrouvableException.class)
+                .hasMessageContaining("XXX-999");
+    }
+
+    @Test
+    void unCapteurNeCreePasDeDoublonQuandLEquipementADejaUnIncidentEnCours() {
+        Incident existant = incidentNonAffecte();
+        ReflectionTestUtils.setField(existant, "id", 9L);
+        when(equipementRepository.findByReference("ASC-001")).thenReturn(Optional.of(equipement));
+        when(incidentRepository.findFirstByEquipementIdAndStatutNot(any(), eq(StatutIncident.RESOLU)))
+                .thenReturn(Optional.of(existant));
+
+        assertThatThrownBy(() -> incidentService.declarerParCapteur("ASC-001", "Porte bloquée en position ouverte"))
+                .isInstanceOf(IncidentDejaOuvertException.class)
+                .extracting(erreur -> ((IncidentDejaOuvertException) erreur).getIncidentExistantId()).isEqualTo(9L);
+        verify(incidentRepository, never()).save(any());
+    }
+
+    @Test
+    void lApiListeTousLesIncidentsOuCeuxDUnStatut() {
+        List<Incident> tous = List.of(incidentNonAffecte(), incidentResolu());
+        List<Incident> resolus = List.of(incidentResolu());
+        when(incidentRepository.findAllByOrderByDateOuvertureDesc()).thenReturn(tous);
+        when(incidentRepository.findByStatutOrderByDateOuvertureDesc(StatutIncident.RESOLU)).thenReturn(resolus);
+
+        assertThat(incidentService.listerIncidents(null)).isSameAs(tous);
+        assertThat(incidentService.listerIncidents(StatutIncident.RESOLU)).isSameAs(resolus);
     }
 
     @Test

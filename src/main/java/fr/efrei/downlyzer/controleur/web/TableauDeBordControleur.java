@@ -15,11 +15,11 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 
 import java.util.List;
 
-// F11 : réservé au responsable par SecuriteConfiguration
+// réservé au responsable (voir SecuriteConfiguration)
 @Controller
 public class TableauDeBordControleur {
 
-    // Au-delà, une colonne renvoie vers la liste filtrée sur son niveau : elle reste lisible même très chargée
+    // au-delà on renvoie vers la liste pour que la colonne reste lisible
     static final int FICHES_PAR_COLONNE = 6;
 
     private final TableauDeBordService tableauDeBordService;
@@ -30,13 +30,12 @@ public class TableauDeBordControleur {
         this.stationService = stationService;
     }
 
-    // Un filtre dont la valeur est invalide dans l'URL (niveau inconnu, identifiant non numérique) est ignoré :
-    // BindingResult recueille l'erreur, le champ reste vide et le tableau s'affiche sans ce filtre
+    // une valeur invalide dans l'url est juste ignorée, BindingResult évite l'erreur
     @GetMapping("/tableau-de-bord")
     public String afficherTableauDeBord(@ModelAttribute("filtre") FiltreTableauDeBordFormulaire filtre,
                                         BindingResult valeursIgnorees, Model model) {
         boolean vueColonnes = filtre.getVue() != VueTableauDeBord.LISTE;
-        // En colonnes, chaque niveau a déjà sa colonne : le filtre par niveau ne s'applique qu'à la liste
+        // en colonnes chaque niveau a déjà sa colonne, donc pas de filtre par niveau
         List<LigneTableauDeBord> lignes = tableauDeBordService.listerIncidentsEnCours(filtre.getStationId(),
                 filtre.getTypeEquipementId(), vueColonnes ? null : filtre.getNiveau(), filtre.getOrdre());
         model.addAttribute("lignes", lignes);

@@ -3,6 +3,7 @@ package fr.efrei.downlyzer.service;
 import fr.efrei.downlyzer.exception.ActionNonAutoriseeException;
 import fr.efrei.downlyzer.exception.DonneeInvalideException;
 import fr.efrei.downlyzer.exception.EquipementIntrouvableException;
+import fr.efrei.downlyzer.exception.IncidentDejaOuvertException;
 import fr.efrei.downlyzer.exception.IncidentIntrouvableException;
 import fr.efrei.downlyzer.exception.PrestataireIntrouvableException;
 import fr.efrei.downlyzer.exception.TransitionInterditeException;
@@ -45,8 +46,7 @@ public class IncidentService {
         this.horloge = horloge;
     }
 
-    // F4 : l'incident démarre non affecté, ouvert à l'instant présent (RG1), et l'équipement passe hors service.
-    // Deux écritures (incident et équipement) : la transaction garantit qu'elles réussissent ensemble (RG10)
+    // deux écritures (incident + équipement) donc transaction
     @Transactional
     public Incident declarerIncident(Long equipementId, String description, String loginDeclarant) {
         Equipement equipement = equipementRepository.findById(equipementId)
@@ -59,13 +59,30 @@ public class IncidentService {
         return incidentRepository.save(incident);
     }
 
-    // F5
+    // un capteur peut renvoyer la même panne, on évite les doublons
+    @Transactional
+    public Incident declarerParCapteur(String referenceEquipement, String description) {
+        Equipement equipement = equipementRepository.findByReference(referenceEquipement)
+                .orElseThrow(() -> new EquipementIntrouvableException(referenceEquipement));
+        incidentRepository.findFirstByEquipementIdAndStatutNot(equipement.getId(), StatutIncident.RESOLU)
+                .ifPresent(existant -> {
+                    throw new IncidentDejaOuvertException(referenceEquipement, existant.getId());
+                });
+        Incident incident = Incident.declarerParCapteur(equipement, description, LocalDateTime.now(horloge));
+        equipement.setEtat(EtatEquipement.HORS_SERVICE);
+        return incidentRepository.save(incident);
+    }
+
+    public List<Incident> listerIncidents(StatutIncident statut) {
+        return statut == null ? incidentRepository.findAllByOrderByDateOuvertureDesc()
+                : incidentRepository.findByStatutOrderByDateOuvertureDesc(statut);
+    }
+
     public Incident trouverIncident(Long id) {
         return incidentRepository.findById(id)
                 .orElseThrow(() -> new IncidentIntrouvableException(id));
     }
 
-    // F9 : RG7, du plus récent au plus ancien par date de résolution
     public List<Incident> listerIncidentsResolus() {
         return incidentRepository.findByStatutOrderByDateResolutionDesc(StatutIncident.RESOLU);
     }
@@ -74,14 +91,12 @@ public class IncidentService {
         return incident.dureeOuverture(LocalDateTime.now(horloge));
     }
 
-    // F6 : seule la description est modifiable. L'agent ne peut plus y toucher dès qu'un prestataire
-    // a pris l'incident en charge ; personne ne le peut une fois l'incident résolu
+    // seule la description est modifiable : l'agent tant que c'est pas affecté, personne après la résolution
     public boolean peutModifierDescription(Incident incident, Profil profil) {
         return !incident.estResolu() && (profil == Profil.RESPONSABLE || !incident.estAffecte());
     }
 
-    // Vérifié dès l'affichage du formulaire : une adresse saisie à la main ne doit pas ouvrir
-    // un formulaire dont l'envoi serait refusé (RG11)
+    // vérifié dès l'affichage pour pas ouvrir un formulaire qui sera refusé
     public Incident trouverIncidentAModifier(Long id, Profil profil) {
         Incident incident = trouverIncident(id);
         if (incident.estResolu()) {
@@ -95,19 +110,16 @@ public class IncidentService {
         return incident;
     }
 
-    // Transactionnel pour que la modification de l'entité chargée soit enregistrée à la fin de la méthode,
-    // sans appel à save() ; le verrouillage optimiste (@Version) y est vérifié au même moment
+    // la transaction suffit pour enregistrer la modif, pas besoin de save()
     @Transactional
     public void modifierDescription(Long id, String nouvelleDescription, Profil profil) {
         trouverIncidentAModifier(id, profil).modifierDescription(nouvelleDescription);
     }
 
-    // F7-F8 : réservées au responsable, et sans objet une fois l'incident résolu
     public boolean peutAffecterEtResoudre(Incident incident, Profil profil) {
         return profil == Profil.RESPONSABLE && !incident.estResolu();
     }
 
-    // F7 : prestataires actifs spécialisés dans le type de l'équipement, sauf celui qui a déjà l'incident
     public List<Prestataire> listerPrestatairesAffectables(Incident incident) {
         Long typeEquipementId = incident.getEquipement().getTypeEquipement().getId();
         return prestataireRepository.trouverActifsSpecialisesEn(typeEquipementId).stream()
@@ -115,7 +127,7 @@ public class IncidentService {
                 .toList();
     }
 
-    // F7 : affectation et réaffectation ; un incident résolu est refusé par Incident.affecter (RG5)
+    // un incident résolu est refusé directement par Incident.affecter
     @Transactional
     public Prestataire affecterPrestataire(Long id, Long prestataireId) {
         Incident incident = trouverIncident(id);
@@ -130,11 +142,11 @@ public class IncidentService {
         return prestataire;
     }
 
-    // F8 : l'incident et, s'il n'a plus d'incident en cours, son équipement changent ensemble (RG10)
+    // l'incident et l'équipement changent ensemble donc transaction
     @Transactional
     public void resoudreIncident(Long id, String commentaire) {
         Incident incident = trouverIncident(id);
-        // Un commentaire laissé vide est enregistré comme absent, et non comme une chaîne vide
+        // un commentaire vide est enregistré à null
         String commentaireSaisi = commentaire == null || commentaire.isBlank() ? null : commentaire.strip();
         incident.resoudre(LocalDateTime.now(horloge), commentaireSaisi);
         Equipement equipement = incident.getEquipement();

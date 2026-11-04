@@ -15,8 +15,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-// Traduit les exceptions métier en une page d'erreur lisible, avec le code HTTP adapté.
-// Limité aux pages : l'API aura son propre gestionnaire, qui répondra en JSON
+// seulement pour les pages, l'api a son propre gestionnaire en json
 @ControllerAdvice(basePackages = "fr.efrei.downlyzer.controleur.web")
 public class GestionnaireExceptionsWeb {
 
@@ -54,7 +53,7 @@ public class GestionnaireExceptionsWeb {
         return afficherErreur(model, utilisateur, "Introuvable", "Cette page n'existe pas.");
     }
 
-    // Levée à l'enregistrement quand la version de l'incident (@Version) a changé entre-temps
+    // levée quand quelqu'un a modifié l'incident entre-temps (@Version)
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public String modificationConcurrente(@AuthenticationPrincipal UtilisateurConnecte utilisateur, Model model) {
@@ -62,8 +61,7 @@ public class GestionnaireExceptionsWeb {
                 "Ces informations viennent d'être modifiées par quelqu'un d'autre. Rechargez la page et recommencez.");
     }
 
-    // Levée par une contrainte UNIQUE quand deux enregistrements simultanés passent les vérifications du service
-    // (par exemple deux évaluations du même incident, RG8)
+    // levée par la base si deux enregistrements passent en même temps (ex : deux évaluations)
     @ExceptionHandler(DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public String donneesDejaEnregistrees(@AuthenticationPrincipal UtilisateurConnecte utilisateur, Model model) {
@@ -71,7 +69,7 @@ public class GestionnaireExceptionsWeb {
                 "Ces informations viennent d'être enregistrées par quelqu'un d'autre. Rechargez la page.");
     }
 
-    // Le modèle d'une page d'erreur part vide : l'utilisateur connecté y est remis pour l'en-tête (F1)
+    // on remet l'utilisateur connecté sinon l'en-tête est vide
     private String afficherErreur(Model model, UtilisateurConnecte utilisateur, String titre, String message) {
         model.addAttribute("utilisateurConnecte", utilisateur);
         model.addAttribute("titre", titre);

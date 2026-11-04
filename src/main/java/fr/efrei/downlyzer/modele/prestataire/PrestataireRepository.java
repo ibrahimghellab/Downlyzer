@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface PrestataireRepository extends JpaRepository<Prestataire, Long> {
 
-    // F7 : seuls les prestataires actifs qui interviennent sur ce type d'équipement sont proposés
+    // seulement les prestataires actifs qui interviennent sur ce type d'équipement
     @Query("""
             SELECT p FROM Prestataire p
             JOIN p.specialites s

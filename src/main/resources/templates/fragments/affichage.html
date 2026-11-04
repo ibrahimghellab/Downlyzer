@@ -1,19 +1,17 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <body>
-<!-- Situation d'une station (piste 4) : niveau de son incident en cours le plus urgent, ou aucun incident -->
 <span th:fragment="badgeSituation(niveau)" class="badge"
       th:classappend="'niveau-' + (${niveau} ?: 'AUCUN')"
       th:text="${niveau != null} ? #{niveau.__${niveau}__} : #{niveau.AUCUN}">Aucun incident</span>
 
-<!-- Note d'une évaluation (F10) en étoiles, avec sa valeur en texte pour les lecteurs d'écran -->
+<!-- texte caché pour les lecteurs d'écran -->
 <span th:fragment="etoiles(note)" class="etoiles" th:title="|${note} / 5|">
     <span aria-hidden="true" th:each="rang : ${#numbers.sequence(1, 5)}"
           th:classappend="${rang <= note} ? 'pleine'">★</span>
     <span class="visually-hidden" th:text="|${note} sur 5|">4 sur 5</span>
 </span>
 
-<!-- Durée lisible : en jours et heures au-delà d'une journée, en heures et minutes en dessous -->
 <span th:fragment="duree(duree)"
       th:text="${duree.toDays() > 0} ? |${duree.toDays()} j ${duree.toHoursPart()} h| : |${duree.toHoursPart()} h ${duree.toMinutesPart()} min|">2 j 5 h</span>
 </body>

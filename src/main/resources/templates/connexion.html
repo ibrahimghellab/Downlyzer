@@ -17,17 +17,17 @@
             <h1 class="h5 mb-1">Connexion</h1>
             <p class="text-body-secondary small mb-4">Supervision des équipements et suivi des incidents du réseau</p>
 
-            <!-- Spring Security redirige vers /connexion?error quand le login ou le mot de passe est faux (F1) -->
+            <!-- spring security renvoie ici avec ?error si la connexion échoue -->
             <div class="alert alert-danger" role="alert" th:if="${param.error}">
                 Identifiant ou mot de passe incorrect.
             </div>
 
-            <!-- Spring Security redirige vers /connexion?logout après « Déconnectez-vous » -->
+            <!-- et avec ?logout après la déconnexion -->
             <div class="alert alert-info" role="status" th:if="${param.logout}">
                 Vous êtes déconnecté.
             </div>
 
-            <!-- th:action ajoute automatiquement le jeton CSRF exigé par Spring Security -->
+            <!-- th:action ajoute le jeton csrf -->
             <form method="post" th:action="@{/connexion}">
                 <div class="mb-3">
                     <label class="form-label" for="username">Identifiant</label>

@@ -1,7 +1,6 @@
 package fr.efrei.downlyzer.modele;
 
-// Déclarés du plus urgent au moins urgent : l'ordre naturel de l'énumération sert à trouver
-// l'incident le plus urgent d'une station. Un incident non affecté passe avant un incident pris en charge
+// rangés du plus urgent au moins urgent, l'ordre sert à trouver l'incident le plus urgent
 public enum NiveauAttention {
     ROUGE,
     ORANGE,

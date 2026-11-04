@@ -11,7 +11,7 @@ public interface EvaluationRepository extends JpaRepository<Evaluation, Long> {
 
     boolean existsByIncidentId(Long incidentId);
 
-    // F10 : la note d'un prestataire est la moyenne des notes des incidents qu'il a traités
+    // note moyenne de chaque prestataire, calculée par la base
     @Query("""
             SELECT new fr.efrei.downlyzer.modele.evaluation.NoteMoyennePrestataire(
                 i.prestataire.id, AVG(e.note), COUNT(e))

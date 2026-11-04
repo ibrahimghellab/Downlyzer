@@ -7,8 +7,7 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
-// RG3-RG4 : seul endroit où vivent les seuils d'urgence. L'heure est fournie par l'appelant,
-// pour que le niveau soit toujours calculé et jamais enregistré
+// seul endroit avec les seuils ; l'heure est passée en paramètre pour pouvoir tester
 @Component
 public class PolitiqueUrgence {
 

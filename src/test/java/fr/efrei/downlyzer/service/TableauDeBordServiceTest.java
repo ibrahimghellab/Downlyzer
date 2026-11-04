@@ -28,7 +28,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-// F11 testé avec la vraie politique d'urgence, des repositories simulés et une horloge figée
+// vraie politique d'urgence, repositories simulés et horloge figée
 class TableauDeBordServiceTest {
 
     private static final LocalDateTime MAINTENANT = LocalDateTime.of(2026, 10, 14, 12, 0);

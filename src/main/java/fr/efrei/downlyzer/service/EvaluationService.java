@@ -20,7 +20,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-// Évaluation des prestataires (F10), séparée d'IncidentService : ses règles (RG8) et ses données sont propres
+// séparé d'IncidentService car l'évaluation a ses propres règles
 @Service
 public class EvaluationService {
 
@@ -44,19 +44,18 @@ public class EvaluationService {
         return evaluationRepository.findByIncidentId(incidentId);
     }
 
-    // F9 : l'évaluation de chaque incident de l'historique, chargée en une seule requête
+    // toutes les évaluations en une requête au lieu d'une par ligne
     public Map<Long, Evaluation> trouverEvaluationsParIncident() {
         return evaluationRepository.findAll().stream()
                 .collect(Collectors.toMap(evaluation -> evaluation.getIncident().getId(), Function.identity()));
     }
 
-    // F7 et F10 : la note d'un prestataire est consultée au moment de choisir à qui confier un incident
+    // la note est affichée au moment de choisir le prestataire
     public Map<Long, NoteMoyennePrestataire> calculerNotesMoyennesParPrestataire() {
         return evaluationRepository.calculerNotesMoyennes().stream()
                 .collect(Collectors.toMap(NoteMoyennePrestataire::prestataireId, Function.identity()));
     }
 
-    // RG8 : un incident résolu, pris en charge par un prestataire et pas encore évalué ; réservé au responsable
     public boolean peutEvaluer(Incident incident, boolean dejaEvalue, Profil profil) {
         return profil == Profil.RESPONSABLE && incident.estEvaluable() && !dejaEvalue;
     }

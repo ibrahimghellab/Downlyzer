@@ -89,7 +89,7 @@ public class IncidentControleur {
         return "redirect:/incidents/" + id;
     }
 
-    // F7 : route réservée au responsable par SecuriteConfiguration
+    // réservé au responsable (voir SecuriteConfiguration)
     @PostMapping("/incidents/{id}/affectation")
     public String affecterPrestataire(@PathVariable Long id,
                                       @Valid @ModelAttribute("affectation") AffectationFormulaire affectation,
@@ -104,7 +104,7 @@ public class IncidentControleur {
         return "redirect:/incidents/" + id;
     }
 
-    // F8 : route réservée au responsable par SecuriteConfiguration
+    // réservé au responsable (voir SecuriteConfiguration)
     @PostMapping("/incidents/{id}/resolution")
     public String resoudreIncident(@PathVariable Long id,
                                    @Valid @ModelAttribute("resolution") ResolutionFormulaire resolution,
@@ -119,7 +119,7 @@ public class IncidentControleur {
         return "redirect:/incidents/" + id;
     }
 
-    // F10 : route réservée au responsable par SecuriteConfiguration
+    // réservé au responsable (voir SecuriteConfiguration)
     @PostMapping("/incidents/{id}/evaluation")
     public String evaluerIntervention(@PathVariable Long id,
                                       @Valid @ModelAttribute("nouvelleEvaluation") EvaluationFormulaire nouvelleEvaluation,
@@ -135,8 +135,7 @@ public class IncidentControleur {
         return "redirect:/incidents/" + id;
     }
 
-    // Partagé par l'affichage normal et par le réaffichage d'un formulaire F7, F8 ou F10 invalide :
-    // un formulaire déjà présent dans le modèle (avec ses erreurs) n'est pas remplacé
+    // sert aussi à réafficher la page quand un formulaire est invalide, sans écraser ses erreurs
     private String afficherDetail(Long id, UtilisateurConnecte utilisateur, Model model) {
         Incident incident = incidentService.trouverIncident(id);
         model.addAttribute("incident", incident);

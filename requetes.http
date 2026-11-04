@@ -1,46 +1,75 @@
-### Partie 5 -- Depuis la section 5.4, le contrôleur renvoie des pages HTML (et non plus du JSON).
-### Les requêtes JSON de la partie 4 ne fonctionnent donc plus. Celles-ci montrent ce que reçoit / envoie un NAVIGATEUR.
+### Requêtes de l'API Downlyzer (F12, piste 8), à lancer depuis IntelliJ (bouton ▶ à gauche de chaque requête).
+### La clé d'API est lue dans http-client.private.env.json (non versionné), qui doit contenir :
+### { "dev": { "cle": "la valeur de DOWNLYZER_API_KEY" } }   puis choisir l'environnement « dev » en haut du fichier.
 
-### 5.9 -- Liste des programmeurs : page HTML (listeProgrammeurs), 200 OK
-GET http://localhost:8080/programmeurs
+### Lister les incidents : 200
+GET http://localhost:8080/api/incidents
+X-API-KEY: {{cle}}
 
-### 5.12.1 -- Page de modification d'un programmeur existant (formulaire prérempli), 200 OK
-GET http://localhost:8080/programmeurs/1
+### Lister les incidents résolus : 200
+GET http://localhost:8080/api/incidents?statut=RESOLU
+X-API-KEY: {{cle}}
 
-### 5.12 -- Programmeur inexistant : 404 (page d'erreur avec le message)
-GET http://localhost:8080/programmeurs/9999
+### Consulter un incident : 200
+GET http://localhost:8080/api/incidents/9
+X-API-KEY: {{cle}}
 
-### 5.11.1 -- Formulaire d'ajout vierge, 200 OK
-GET http://localhost:8080/programmeurs/nouveau
+### Incident inexistant : 404 en JSON
+GET http://localhost:8080/api/incidents/999
+X-API-KEY: {{cle}}
 
-### 5.11.2 -- Ce qu'envoie le navigateur à la validation du formulaire d'ajout : des paires nom=valeur (PAS du JSON)
-### Réponse attendue : 302 Found + en-tête Location: /programmeurs (redirection). "@no-redirect" empêche le client de la suivre, pour qu'on la voie.
-# @no-redirect
-POST http://localhost:8080/programmeurs
-Content-Type: application/x-www-form-urlencoded
+### Sans clé d'API : 401 en JSON
+GET http://localhost:8080/api/incidents
 
-nom=Turing&prenom=Alan&adresse=1944+Enigma+Street&langageExpertise=Java&livrePrefere=Computing+machinery&salaire=101010.1
+### Un capteur signale une panne : 201 + en-tête Location
+POST http://localhost:8080/api/incidents
+X-API-KEY: {{cle}}
+Content-Type: application/json
 
-### 5.10.2 -- Ce qui se passe quand un formulaire envoie un simple POST sur une route DELETE : 405 Method Not Allowed
-POST http://localhost:8080/programmeurs/11
+{
+  "referenceEquipement": "ASC-004",
+  "description": "Porte bloquée en position ouverte depuis 3 minutes"
+}
 
-### 5.10.3 -- Ce qu'envoie le navigateur avec le champ caché _method (filtre activé dans application.properties) : traité comme un DELETE
-### Réponse attendue : 302 + Location: /programmeurs (adapter l'id)
-# @no-redirect
-POST http://localhost:8080/programmeurs/11
-Content-Type: application/x-www-form-urlencoded
+### Le même capteur répète son signal : 409, l'incident en cours est indiqué
+POST http://localhost:8080/api/incidents
+X-API-KEY: {{cle}}
+Content-Type: application/json
 
-_method=DELETE
+{
+  "referenceEquipement": "ASC-004",
+  "description": "Porte bloquée en position ouverte depuis 3 minutes"
+}
 
-### 5.12.2 -- Modification : POST + _method=PUT (adapter l'id), réponse attendue : 302 + Location: /programmeurs
-# @no-redirect
-POST http://localhost:8080/programmeurs/1
-Content-Type: application/x-www-form-urlencoded
+### Référence inconnue : 404
+POST http://localhost:8080/api/incidents
+X-API-KEY: {{cle}}
+Content-Type: application/json
 
-_method=PUT&nom=Lovelace&prenom=Ada&adresse=1+rue+Analytical+Engine&langageExpertise=Fortran&livrePrefere=Notes&salaire=33333.99
+{
+  "referenceEquipement": "XXX-999",
+  "description": "Porte bloquée en position ouverte depuis 3 minutes"
+}
 
-### 5.10.3 -- Suppression d'un id inexistant : 404
-POST http://localhost:8080/programmeurs/9999
-Content-Type: application/x-www-form-urlencoded
+### Données invalides : 400, avec chaque champ en cause
+POST http://localhost:8080/api/incidents
+X-API-KEY: {{cle}}
+Content-Type: application/json
 
-_method=DELETE
+{
+  "referenceEquipement": "",
+  "description": "court"
+}
+
+### Retour en service d'un incident : 204
+PATCH http://localhost:8080/api/incidents/9/resolution
+X-API-KEY: {{cle}}
+Content-Type: application/json
+
+{
+  "commentaire": "Le capteur ne détecte plus de défaut"
+}
+
+### Le même retour en service une seconde fois : 409
+PATCH http://localhost:8080/api/incidents/9/resolution
+X-API-KEY: {{cle}}

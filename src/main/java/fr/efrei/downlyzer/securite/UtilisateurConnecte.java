@@ -25,7 +25,7 @@ public class UtilisateurConnecte implements UserDetails {
         this.actif = utilisateur.isActif();
     }
 
-    // Le préfixe ROLE_ permet d'écrire hasRole("RESPONSABLE") dans les règles d'accès
+    // le préfixe ROLE_ permet d'utiliser hasRole("RESPONSABLE")
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + profil.name()));

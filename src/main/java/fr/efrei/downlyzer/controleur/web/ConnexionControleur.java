@@ -13,7 +13,7 @@ public class ConnexionControleur {
         return "connexion";
     }
 
-    // Page d'arrivée après la connexion : le responsable commence par la supervision (F11), l'agent par les stations
+    // le responsable arrive sur le tableau de bord, l'agent sur les stations
     @GetMapping("/")
     public String accueil(@AuthenticationPrincipal UtilisateurConnecte utilisateur) {
         return utilisateur.getProfil().peutSuperviser() ? "redirect:/tableau-de-bord" : "redirect:/stations";

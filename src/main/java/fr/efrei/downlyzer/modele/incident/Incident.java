@@ -12,8 +12,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-// Contrairement aux autres entités, l'état d'un incident ne se modifie pas par des setters :
-// il passe par des méthodes métier qui garantissent les règles RG1, RG2 et RG5.
+// pas de setters pour l'état : il change seulement via declarer, affecter et resoudre
 @Entity
 @Table(name = "incident")
 public class Incident {
@@ -26,7 +25,7 @@ public class Incident {
     @JoinColumn(name = "equipement_id", nullable = false)
     private Equipement equipement;
 
-    // Vide lorsque l'incident a été déclaré par un capteur
+    // vide si l'incident vient d'un capteur
     @ManyToOne
     @JoinColumn(name = "declarant_id")
     private Utilisateur declarant;
@@ -58,12 +57,12 @@ public class Incident {
     @Column(name = "commentaire_resolution", length = 1000)
     private String commentaireResolution;
 
-    // Verrouillage optimiste : refuse d'enregistrer un incident modifié entre-temps par quelqu'un d'autre
+    // verrouillage optimiste : empêche d'écraser une modif faite entre-temps
     @Version
     @Column(name = "version", nullable = false)
     private int version;
 
-    // Exigé par JPA ; protégé pour qu'un incident ne puisse être créé que par les méthodes de déclaration
+    // obligatoire pour jpa, protected pour obliger à passer par les méthodes declarer
     protected Incident() {
     }
 
@@ -88,7 +87,7 @@ public class Incident {
         return new Incident(equipement, null, SourceIncident.CAPTEUR, description, dateOuverture);
     }
 
-    // Sert aussi à la réaffectation (F7) : le nouveau prestataire remplace l'ancien
+    // sert aussi pour la réaffectation
     public void affecter(Prestataire nouveauPrestataire, LocalDateTime maintenant) {
         Objects.requireNonNull(nouveauPrestataire, "Le prestataire à affecter est obligatoire");
         if (estResolu()) {
@@ -121,7 +120,7 @@ public class Incident {
         this.description = nouvelleDescription;
     }
 
-    // Calculée, jamais stockée : jusqu'à maintenant pour un incident en cours, jusqu'à sa résolution sinon
+    // calculée, pas stockée : s'arrête à la résolution si l'incident est résolu
     public Duration dureeOuverture(LocalDateTime maintenant) {
         LocalDateTime fin = estResolu() ? dateResolution : maintenant;
         return Duration.between(dateOuverture, fin);
@@ -135,7 +134,7 @@ public class Incident {
         return statut == StatutIncident.AFFECTE;
     }
 
-    // RG8 : seul un incident résolu ET pris en charge par un prestataire peut être évalué
+    // il faut un incident résolu ET un prestataire pour pouvoir évaluer
     public boolean estEvaluable() {
         return estResolu() && prestataire != null;
     }

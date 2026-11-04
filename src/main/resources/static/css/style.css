@@ -1,8 +1,7 @@
-/* Charte de Downlyzer, appliquée par-dessus Bootstrap : une console de supervision sobre,
-   où la couleur est réservée à l'information (niveaux d'attention, états, statuts) */
+/* charte de downlyzer par-dessus bootstrap : la couleur sert seulement à l'info */
 
 :root {
-    /* Couleurs des niveaux d'attention (RG3-RG4), définies une seule fois : badges, barre, lignes et carte les reprennent */
+    /* couleurs des niveaux, définies une fois pour les badges, la barre et la carte */
     --niveau-ROUGE: #dc3545;
     --niveau-ORANGE: #fd7e14;
     --niveau-VERT: #198754;
@@ -43,7 +42,7 @@ h1, .h1, h2, .h2, h3, .h3 {
     letter-spacing: -0.01em;
 }
 
-/* Boutons : le bleu de la marque plutôt que celui de Bootstrap */
+/* boutons au bleu de la marque */
 .btn {
     font-weight: 500;
 }
@@ -73,7 +72,7 @@ h1, .h1, h2, .h2, h3, .h3 {
     box-shadow: 0 0 0 0.2rem rgba(31, 79, 209, 0.15);
 }
 
-/* Panneaux : une bordure fine plutôt qu'une ombre */
+/* bordures fines au lieu des ombres */
 .card {
     --bs-card-border-color: var(--bordure);
     --bs-card-cap-bg: var(--surface);
@@ -84,7 +83,7 @@ h1, .h1, h2, .h2, h3, .h3 {
     padding: 0.75rem 1rem;
 }
 
-/* En-tête commun (F1) */
+/* en-tête */
 .barre-application {
     background-color: var(--surface);
     border-bottom: 1px solid var(--bordure);
@@ -169,7 +168,7 @@ h1, .h1, h2, .h2, h3, .h3 {
     color: var(--encre);
 }
 
-/* En-tête de page : titre et contexte */
+/* titre de page */
 .entete-page {
     display: flex;
     flex-wrap: wrap;
@@ -189,7 +188,7 @@ h1, .h1, h2, .h2, h3, .h3 {
     font-size: 0.875rem;
 }
 
-/* Tableaux : en-têtes discrets, lignes compactes, liens à la couleur du texte */
+/* tableaux compacts, liens couleur texte */
 .table {
     --bs-table-bg: var(--surface);
     margin-bottom: 0;
@@ -229,7 +228,7 @@ h1, .h1, h2, .h2, h3, .h3 {
     border-radius: var(--bs-border-radius);
 }
 
-/* Texte long tenu sur une ligne ; le texte complet reste disponible au survol (attribut title) */
+/* texte long sur une ligne, le texte complet est dans le title */
 .texte-tronque {
     display: block;
     max-width: 28rem;
@@ -242,8 +241,7 @@ h1, .h1, h2, .h2, h3, .h3 {
     font-variant-numeric: tabular-nums;
 }
 
-/* Badges d'état, de statut et de niveau : fond légèrement teinté, point de couleur et texte foncé,
-   lisible quelle que soit la couleur ; la classe porte le nom de la constante stockée en base */
+/* badges : fond teinté, point de couleur et texte foncé pour rester lisible */
 .badge {
     display: inline-flex;
     align-items: center;
@@ -279,7 +277,7 @@ h1, .h1, h2, .h2, h3, .h3 {
 .statut-AFFECTE, .niveau-PRIS_EN_CHARGE { --couleur-badge: var(--niveau-PRIS_EN_CHARGE); }
 .statut-NON_AFFECTE, .niveau-AUCUN { --couleur-badge: var(--niveau-AUCUN); }
 
-/* Une classe par niveau fixe la couleur que reprennent les lignes, les parts de la barre et les pastilles de légende */
+/* une classe par niveau, reprise par les lignes, la barre et la légende */
 .couleur-ROUGE { --couleur-niveau: var(--niveau-ROUGE); }
 .couleur-ORANGE { --couleur-niveau: var(--niveau-ORANGE); }
 .couleur-VERT { --couleur-niveau: var(--niveau-VERT); }
@@ -295,7 +293,7 @@ h1, .h1, h2, .h2, h3, .h3 {
     background-color: var(--couleur-niveau);
 }
 
-/* Tableau de bord (F11) */
+/* tableau de bord */
 .bandeau-indicateurs {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -352,8 +350,7 @@ a.indicateur:focus-visible {
     font-size: 0.75rem;
 }
 
-/* La bordure gauche de chaque ligne reprend la couleur de son niveau, et un incident pris en charge
-   est atténué pour que les incidents en attente ressortent (RG4) */
+/* bordure de la couleur du niveau ; pris en charge en gris pour que les autres ressortent */
 .tableau-incidents tbody tr td:first-child {
     box-shadow: inset 3px 0 0 var(--couleur-niveau, transparent);
 }
@@ -363,7 +360,7 @@ a.indicateur:focus-visible {
     color: var(--encre-secondaire);
 }
 
-/* Situation : une phrase qui dit ce qui demande une action, puis les chiffres clés */
+/* phrase de situation et chiffres clés */
 .situation {
     display: flex;
     flex-wrap: wrap;
@@ -416,7 +413,7 @@ a.indicateur:focus-visible {
     border-radius: var(--bs-border-radius);
 }
 
-/* Choix de la vue : deux boutons accolés, celui de la vue affichée est en relief */
+/* choix de la vue */
 .choix-vue {
     display: inline-flex;
     padding: 2px;
@@ -440,7 +437,7 @@ a.indicateur:focus-visible {
     box-shadow: 0 0 0 1px var(--bordure);
 }
 
-/* Vue par niveau : une colonne par niveau d'attention */
+/* colonnes par niveau */
 .colonnes {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -507,7 +504,7 @@ a.indicateur:focus-visible {
     text-align: center;
 }
 
-/* Fiche d'incident : toute la fiche mène au détail ; le liseré gauche porte la couleur du niveau */
+/* fiche d'incident cliquable */
 .fiche {
     display: flex;
     flex-direction: column;
@@ -572,7 +569,7 @@ a.indicateur:focus-visible {
     text-decoration: underline;
 }
 
-/* Barre d'outils au-dessus d'un tableau : titre à gauche, filtres compacts à droite */
+/* barre d'outils au-dessus d'un tableau */
 .barre-outils {
     display: flex;
     flex-wrap: wrap;
@@ -629,7 +626,7 @@ a.indicateur:focus-visible {
     flex: none;
 }
 
-/* Barre de répartition : parts séparées par un espace de 2 px, extrémités arrondies */
+/* barre de répartition */
 .repartition {
     display: flex;
     gap: 2px;
@@ -653,7 +650,7 @@ a.indicateur:focus-visible {
 .repartition-part:last-child { border-radius: 0 4px 4px 0; }
 .repartition-part:only-child { border-radius: 4px; }
 
-/* Le texte blanc n'atteint pas le contraste minimal sur l'orange (2,6:1) : l'encre foncée est utilisée à la place */
+/* le blanc est pas assez lisible sur l'orange, on met du texte foncé */
 .repartition-part.couleur-ORANGE { color: var(--encre); }
 
 .repartition-part:hover,
@@ -669,8 +666,7 @@ a.indicateur:focus-visible {
     color: var(--encre);
 }
 
-/* L'infobulle est cachée sans occuper de place (display), pour ne pas élargir la page ;
-   aux extrémités, elle s'aligne sur le bord de la barre au lieu d'en déborder */
+/* display none pour pas élargir la page ; aux bords, l'infobulle s'aligne sur la barre */
 .infobulle {
     display: none;
     position: absolute;
@@ -719,12 +715,12 @@ a.indicateur:focus-visible {
     font-weight: 600;
 }
 
-/* Carte du réseau (piste 4) */
+/* carte */
 .carte-reseau {
     height: 28rem;
 }
 
-/* Note affichée en étoiles (F10) */
+/* étoiles */
 .etoiles {
     color: var(--etoile-vide);
     letter-spacing: 0.1em;
@@ -735,8 +731,7 @@ a.indicateur:focus-visible {
     color: var(--etoile-pleine);
 }
 
-/* Saisie de la note : cinq boutons radio dessinés en étoiles. Les boutons sont dans l'ordre 5 → 1 et affichés
-   à l'envers, pour que « bouton coché ~ étoiles suivantes » colore l'étoile choisie et toutes celles à sa gauche */
+/* radios dans l'ordre 5 → 1 et affichés à l'envers, pour colorer l'étoile choisie et celles à sa gauche */
 .notation {
     display: inline-flex;
     flex-direction: row-reverse;
@@ -773,7 +768,7 @@ a.indicateur:focus-visible {
     color: var(--encre);
 }
 
-/* Onglets (page Stations) */
+/* onglets */
 .nav-tabs .nav-link {
     color: var(--encre-secondaire);
     font-weight: 500;

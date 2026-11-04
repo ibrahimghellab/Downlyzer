@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface IncidentRepository extends JpaRepository<Incident, Long> {
     List<Incident> findByEquipementIdOrderByDateOuvertureDesc(Long equipementId);
@@ -15,11 +16,16 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
 
     List<Incident> findByStatutNot(StatutIncident statut);
 
-    // F8 : l'équipement reste hors service tant qu'un autre de ses incidents n'est pas résolu
+    List<Incident> findAllByOrderByDateOuvertureDesc();
+
+    List<Incident> findByStatutOrderByDateOuvertureDesc(StatutIncident statut);
+
+    Optional<Incident> findFirstByEquipementIdAndStatutNot(Long equipementId, StatutIncident statut);
+
+    // l'équipement reste hors service tant qu'il a un autre incident en cours
     boolean existsByEquipementIdAndIdNotAndStatutNot(Long equipementId, Long incidentId, StatutIncident statut);
 
-    // F11 : incidents en cours (RG6), filtrés par station et par type d'équipement quand ces filtres sont choisis ;
-    // un paramètre null désactive son filtre
+    // un paramètre null veut dire pas de filtre
     @Query("""
             SELECT i FROM Incident i
             WHERE i.statut <> :resolu
@@ -30,8 +36,7 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
                                   @Param("stationId") Long stationId,
                                   @Param("typeEquipementId") Long typeEquipementId);
 
-    // F11 : délai moyen de résolution, en minutes, des incidents résolus depuis une date.
-    // Seule requête SQL native du projet (§7.6) : voir l'analyse critique dans journal.md
+    // seule requête native du projet (analyse dans journal.md)
     @Query(value = """
             SELECT AVG(TIMESTAMPDIFF(MINUTE, date_ouverture, date_resolution))
             FROM incident

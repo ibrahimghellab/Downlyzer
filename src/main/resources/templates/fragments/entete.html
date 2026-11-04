@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <!-- Feuilles de style communes à toutes les pages : incluses avec th:replace="~{fragments/entete :: styles}" -->
     <th:block th:fragment="styles">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,7 +10,7 @@
     </th:block>
 </head>
 <body>
-<!-- Symbole de Downlyzer : une flèche vers le bas (« down ») dans un carré, partagé par l'en-tête et la connexion -->
+<!-- logo : une flèche vers le bas pour « down » -->
 <svg th:fragment="symbole" class="symbole" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
     <rect width="26" height="26" rx="6" fill="#1f4fd1"/>
     <path d="M7 8.5l6 6 6-6M7 15l6 6 6-6" fill="none" stroke="#fff" stroke-width="2.2"
@@ -19,8 +18,7 @@
     <path d="M7 8.5l6 6 6-6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
 
-<!-- En-tête commun à toutes les pages (F1) : inclus avec th:replace="~{fragments/entete :: entete('section')}",
-     où « section » est l'entrée de navigation à mettre en évidence (tableau-de-bord, stations, historique, ou vide) -->
+<!-- section = l'entrée du menu à souligner -->
 <header th:fragment="entete(section)" class="barre-application mb-4">
     <div class="container">
         <div class="d-flex align-items-center gap-4 align-self-stretch">
@@ -41,7 +39,7 @@
         <div class="utilisateur" th:if="${utilisateurConnecte != null}">
             Bonjour <strong th:text="${utilisateurConnecte.prenom}">Karim</strong>
             (<span th:text="#{profil.__${utilisateurConnecte.profil}__}">Agent de station</span>) |
-            <!-- La déconnexion est un POST, pour être protégée par le jeton CSRF -->
+            <!-- déconnexion en post pour être protégée par le jeton csrf -->
             <form class="d-inline" method="post" th:action="@{/deconnexion}">
                 <button type="submit" class="btn btn-link p-0 align-baseline">Déconnectez-vous</button>
             </form>

@@ -1,13 +1,12 @@
 package fr.efrei.downlyzer.securite;
 
-
 import fr.efrei.downlyzer.modele.utilisateur.UtilisateurRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-// Appelé par Spring Security à chaque tentative de connexion pour retrouver l'utilisateur à partir de son login
+// appelé par spring security à chaque connexion pour charger l'utilisateur
 @Service
 public class UtilisateurDetailsService implements UserDetailsService {
 

@@ -19,8 +19,7 @@ public class StationControleur {
         this.stationService = stationService;
     }
 
-    // Deux onglets sur la même page : la liste par défaut, la carte (piste 4) avec ?vue=carte, réservée
-    // au responsable par SecuriteConfiguration. L'agent ne voit que la liste, sans les niveaux d'attention
+    // deux onglets : la liste, et la carte avec ?vue=carte (réservée au responsable)
     @GetMapping
     public String afficherStations(@RequestParam(defaultValue = "liste") String vue,
                                    @AuthenticationPrincipal UtilisateurConnecte utilisateur, Model model) {

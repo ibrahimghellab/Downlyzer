@@ -38,15 +38,23 @@ Aucun secret n'est versionné. Variables d'environnement à définir avant le la
 | `DB_USERNAME` | utilisateur MariaDB (ex. `downlyzer_app`) | oui |
 | `DB_PASSWORD` | mot de passe de cet utilisateur | oui |
 | `DB_URL` | URL JDBC ; par défaut `jdbc:mariadb://localhost:3306/downlyzer` | non |
-| `DOWNLYZER_API_KEY` | clé d'accès à l'API REST pour les systèmes externes (piste 8) | à venir |
+| `DOWNLYZER_API_KEY` | clé exigée des systèmes externes sur l'API REST (en-tête `X-API-KEY`) ; une longue valeur aléatoire, par exemple obtenue avec `openssl rand -hex 24` | pour utiliser l'API |
 
-Sans `DB_USERNAME` ou `DB_PASSWORD`, l'application refuse de démarrer (`Could not resolve placeholder`).
+Sans `DB_USERNAME` ou `DB_PASSWORD`, l'application refuse de démarrer (`Could not resolve placeholder`). Sans `DOWNLYZER_API_KEY`, elle démarre, mais l'API refuse toutes les requêtes (401) et un avertissement l'indique au démarrage.
 
 ### Lancer l'application
 ```bash
 mvn spring-boot:run
 ```
-Puis ouvrir http://localhost:8080. Documentation de l'API : http://localhost:8080/swagger-ui.html
+Puis ouvrir http://localhost:8080. Documentation de l'API : http://localhost:8080/swagger-ui.html (bouton « Authorize » pour saisir la clé d'API avant d'essayer une requête).
+
+### Essayer l'API et le simulateur de capteurs (piste 8)
+- `requetes.http`, à la racine : toutes les requêtes de l'API (succès et erreurs), à lancer depuis IntelliJ. La clé est lue dans un fichier `http-client.private.env.json` non versionné (son contenu est indiqué en tête de `requetes.http`).
+- Le simulateur envoie des signalements de panne à intervalles réguliers, comme des capteurs installés sur les équipements :
+  ```bash
+  java simulateur/SimulateurCapteurs.java 5
+  ```
+  (5 signalements ; la variable `DOWNLYZER_API_KEY` doit être définie dans le terminal). Les incidents créés apparaissent aussitôt dans le tableau de bord.
 
 ### Lancer les tests
 ```bash
@@ -115,7 +123,8 @@ Organisation des packages (`fr.efrei.downlyzer`) :
 | `configuration` | beans techniques (l'horloge `Clock`) |
 | `controleur.web` | pages Thymeleaf, gestionnaire d'erreurs des pages, contrôleur d'erreur |
 | `controleur.web.formulaire` | objets qui reçoivent les saisies des formulaires |
-| `controleur.api` | API REST et son gestionnaire d'erreurs *(à venir)* |
+| `controleur.api` | API REST (`IncidentApiControleur`) et son gestionnaire d'erreurs JSON |
+| `controleur.api.dto` | objets échangés avec les systèmes externes (`IncidentDto`, `DeclarationCapteurDto`, `ResolutionDto`) |
 
 - **`controleur.web`** : les pages de l'application, utilisées par les deux profils. Après une modification, redirection (Post/Redirect/Get) ; en cas d'erreur, une page lisible avec le bon code HTTP.
 - **`controleur.api`** : l'API REST destinée au monde extérieur (F12 et piste 8). Elle expose une partie seulement de la logique métier, renvoie du JSON (DTO, jamais les entités) et des codes HTTP adaptés (200, 201, 204, 400, 404, 409).
@@ -123,10 +132,12 @@ Organisation des packages (`fr.efrei.downlyzer`) :
 
 | Endpoint | Usage | Codes |
 |---|---|---|
-| `POST /api/incidents` | un capteur déclare une panne (par référence d'équipement) | 201, 400, 404, 409 |
-| `GET /api/incidents` | consulter les incidents | 200 |
-| `GET /api/incidents/{id}` | consulter un incident | 200, 404 |
-| `PATCH /api/incidents/{id}/resolution` | signaler le retour en service | 204, 404, 409 |
+| `GET /api/incidents` | consulter les incidents, du plus récent au plus ancien ; `?statut=RESOLU` pour filtrer | 200, 400 (statut inconnu), 401 |
+| `GET /api/incidents/{id}` | consulter un incident | 200, 400 (identifiant non numérique), 401, 404 |
+| `POST /api/incidents` | un capteur déclare une panne, en désignant l'équipement par sa référence | 201 + `Location`, 400, 401, 404 (référence inconnue), 409 (incident déjà en cours) |
+| `PATCH /api/incidents/{id}/resolution` | signaler le retour en service (corps et commentaire facultatifs) | 204, 401, 404, 409 (déjà résolu) |
+
+Toutes les erreurs de l'API sont renvoyées en JSON au format `ProblemDetail` (RFC 9457) : `status`, `title`, `detail`, et pour un 409 de déclaration, `incidentExistant`.
 
 ### Pages de l'application
 
@@ -273,7 +284,7 @@ Ces contraintes ne remplacent pas les contrôles de la couche service : elles é
 - **Noms des tests** : chaque méthode est nommée comme une phrase qui décrit le comportement attendu (`unAgentNePeutPlusModifierLaDescriptionDUnIncidentAffecte`), conformément à la fiche *Nommage* : un test qui échoue dit directement quelle règle est cassée.
 - Commande : `mvn verify` (voir README pour `DownlyzerApplicationTests`, qui a besoin de la base).
 - Couvert :
-  - service des incidents (`IncidentServiceTest`, 18 tests) :
+  - service des incidents (`IncidentServiceTest`, 22 tests) : déclaration par un capteur (source `CAPTEUR`, sans déclarant, équipement hors service), référence inconnue, pas de doublon quand l'équipement a déjà un incident en cours, liste de l'API avec ou sans statut ;
     - F4 : un incident déclaré démarre non affecté, à l'heure de l'horloge, et l'équipement passe hors service ;
     - F5-F6 : droits de modification de la description (agent ou responsable, incident non affecté, affecté ou résolu), incident inexistant, durée d'ouverture (incident en cours ou résolu) ;
     - F7 : affectation d'un prestataire spécialisé, réaffectation (l'ancien prestataire n'est plus proposé), refus d'un prestataire non proposé, refus d'affecter un incident résolu (RG5), seul le responsable peut affecter et résoudre ;
@@ -283,6 +294,7 @@ Ces contraintes ne remplacent pas les contrôles de la couche service : elles é
   - politique d'urgence (`PolitiqueUrgenceTest`, 5 tests) : exactement les cas du §7.8 — 2 h, 47 h et 47 h 59 min 59 s vert ; 48 h pile et 71 h 59 min 59 s orange ; 72 h pile et 5 jours rouge ; un incident affecté depuis 1 h ou ouvert depuis 80 h est « pris en charge » (RG4) ; un incident résolu n'a pas de niveau (RG6). Les tests construisent la vraie classe avec `new`, sans Spring ni simulation : elle ne dépend de rien d'autre que de l'incident et de l'heure.
   - situation des stations (`StationServiceTest`, 4 tests) : une station prend le niveau de son incident le plus urgent, un incident en attente passe avant un incident pris en charge, une station dont tous les incidents sont affectés est « prise en charge », une station sans incident n'a pas de niveau.
   - service des évaluations (`EvaluationServiceTest`, 8 tests) : évaluation enregistrée avec l'auteur connecté et la date de l'horloge, refus pour un incident non résolu ou résolu sans prestataire, une seule évaluation par incident, note de 1 à 5 (0 et 6 refusés, 1 et 5 acceptés), commentaire vide enregistré comme absent, seul le responsable peut évaluer, notes moyennes indexées par prestataire (RG8, F10).
+  - API (`IncidentApiControleurTest`, 16 tests) : 401 en JSON sans clé ou avec une clé fausse, 403 pour un utilisateur des pages, liste des incidents en JSON sans champ interne, filtre par statut, statut inconnu (400), incident inexistant (404 en JSON), identifiant non numérique (400), panne signalée par un capteur (201 et `Location`), déclaration invalide (400 avec chaque champ), corps qui n'est pas du JSON (400), référence inconnue (404), panne déjà signalée (409 avec l'incident existant), retour en service avec ou sans corps (204), incident déjà résolu (409).
   - pages (`IncidentControleurTest`, 25 tests) :
     - accès refusé sans connexion, détail d'un incident (F5) avec ou sans lien de modification, enregistrement d'une description valide, formulaire réaffiché si la description est trop courte, refus d'un envoi sans jeton CSRF ;
     - F7-F8 : formulaires visibles pour le responsable et absents pour l'agent, affectation et résolution qui ramènent au détail avec un message, affectation sans prestataire réaffichée avec l'erreur, prestataire non proposé (400), agent qui tente d'affecter ou de résoudre (403) ;
@@ -470,6 +482,23 @@ Les transitions d'état passent par des requêtes POST vers des URL d'action (`/
 - **La colonne « Ouvert depuis » utilise des chiffres à chasse fixe** (`tabular-nums`) pour que les durées s'alignent d'une ligne à l'autre ; les grands chiffres des indicateurs gardent des chiffres proportionnels, plus lisibles en gros.
 - **Pas de mode sombre** : l'application suit le thème clair de Bootstrap sur toutes ses pages ; un mode sombre demanderait de choisir et vérifier une seconde série de couleurs pour toute l'interface.
 
+### API REST (F12) et capteurs (piste 8)
+- **`ResponseEntity` dans chaque méthode de l'API, comme dans la partie REST du TP fil rouge** : `ok(...)` (200), `created(adresse).body(...)` (201, avec l'en-tête `Location` construit par `ServletUriComponentsBuilder`) et `noContent()` (204). Le code de succès se lit donc directement dans la méthode. Les erreurs, elles, ne sont pas décidées dans le contrôleur : ce sont les exceptions métier du service, traduites en JSON par `GestionnaireExceptionsApi` (voir Exceptions), ce qui évite de répéter les mêmes `notFound()` dans chaque méthode.
+- **L'API renvoie des DTO (`record`), jamais les entités** : pas de relation JPA à sérialiser ni de risque de boucle, et aucun champ interne exposé (version, données du déclarant). Le statut et la source sont envoyés sous forme de texte (`NON_AFFECTE`, `CAPTEUR`).
+- **Un capteur désigne l'équipement par sa référence** (`ASC-004`), unique d'après RG9, et non par son identifiant en base, qu'il ne connaît pas.
+- **Un seul incident en cours par équipement** (point métier tranché) : un capteur qui répète son signal ne crée pas de doublon ; il reçoit un **409** qui donne l'identifiant de l'incident déjà ouvert (`incidentExistant`), pour pouvoir le suivre. Créer un doublon fausserait le tableau de bord ; renvoyer simplement l'incident existant avec un 200 aurait caché au capteur que son signalement n'a rien créé.
+- **La déclaration par un capteur suit les mêmes règles qu'une déclaration manuelle** : `Incident.declarerParCapteur` (RG1, pas de déclarant), même validation de la description (10 à 1 000 caractères), et l'équipement passe hors service, dans une transaction.
+- **Le retour en service est un `PATCH`** sur `/api/incidents/{id}/resolution` : seule une partie de l'incident change (son statut, sa date et son commentaire de résolution), et l'adresse nomme l'action, comme les URL d'action des pages. Le corps est facultatif.
+- **Une clé d'API dans l'en-tête `X-API-KEY`** plutôt qu'un compte utilisateur : un capteur ne remplit pas de formulaire de connexion. La clé est lue dans la variable d'environnement `DOWNLYZER_API_KEY`, jamais écrite dans le code (§7.7).
+  - Le filtre `CleApiFiltre` compare la clé reçue en **temps constant** (`MessageDigest.isEqual`) : le temps de réponse ne permet pas de deviner la clé caractère par caractère. Sans clé configurée, aucune n'est acceptée.
+  - **Une seconde chaîne Spring Security, réservée à `/api/**`**, sans session ni formulaire ni protection CSRF (aucun navigateur n'y envoie de cookie de session) : une requête sans clé valide reçoit un **401 en JSON**, au lieu d'être redirigée vers la page de connexion. Un utilisateur connecté aux pages n'a pas accès à l'API pour autant (**403**) : ce n'est pas un système externe.
+- **Swagger (springdoc 3.1.1)** génère la documentation en lisant directement les contrôleurs, sans annotation de documentation dans le code (`@Operation`, `@ApiResponse`…), pour rester au plus près du code du TP. Seule la clé d'API est déclarée (`DocumentationApiConfiguration`), pour que le bouton « Authorize » de Swagger permette d'essayer les requêtes. La documentation ne couvre que `/api/**` (`springdoc.paths-to-match`), et ses pages restent accessibles sans compte, puisque les appels qu'elles font exigent de toute façon la clé.
+  - Les codes d'erreur (400, 404, 409) apparaissent dans Swagger grâce au `@ResponseStatus` placé sur chaque méthode de `GestionnaireExceptionsApi`, comme dans le gestionnaire des pages : springdoc lit cette annotation de Spring.
+  - **Limite** : sans annotation de documentation, springdoc ne sait pas lire le code d'un `ResponseEntity` ; Swagger affiche donc « 200 » comme réponse réussie du `POST` (201 en réalité) et du `PATCH` (204). Les vrais codes sont donnés par le tableau des requêtes de la section ARCHITECTURE et vérifiés par les tests. Nous avons préféré cette limite à des annotations `@ApiResponse` sur chaque méthode, qui n'ont pas été vues en cours et doubleraient le code.
+- **Une adresse inconnue sous `/api` reçoit une erreur en JSON** : `ErreurControleur` renvoie un `ProblemDetail` à un client qui demande du JSON, et la page `erreur.html` à un navigateur.
+- **Un simulateur de capteurs** (`simulateur/SimulateurCapteurs.java`) joue le rôle du système externe : un programme Java autonome, hors de l'application, lancé avec `java` sans compilation préalable. Il envoie à intervalles réguliers des pannes sur des équipements tirés au hasard, avec le client HTTP de Java (`HttpClient`), et affiche le code reçu (201, ou 409 quand l'équipement a déjà un incident en cours).
+- **`requetes.http`** remplace celui du TP : il contient une requête par cas de l'API (succès et erreurs), à lancer depuis IntelliJ ; la clé est lue dans un fichier local ignoré par Git.
+
 ### Exceptions
 - Exceptions métier personnalisées, non vérifiées (`RuntimeException`, qui n'obligent pas chaque méthode à les déclarer), héritant d'une classe mère abstraite `ExceptionMetier` (fiche *Gestion des exceptions*), avec des messages en français qui indiquent l'objet concerné et la raison :
   - `RessourceIntrouvableException` (abstraite) et ses filles `StationIntrouvableException`, `EquipementIntrouvableException`, `IncidentIntrouvableException`, `PrestataireIntrouvableException`, `UtilisateurIntrouvableException` ;
@@ -484,8 +513,8 @@ Les transitions d'état passent par des requêtes POST vers des URL d'action (`/
   - Une contrainte `UNIQUE` violée (`DataIntegrityViolationException`, par exemple deux responsables qui évaluent le même incident au même instant, après que le service a vérifié des deux côtés qu'il n'y avait pas encore d'évaluation) donne aussi un **409**, au lieu d'une erreur 500.
   - `ResponseEntity` n'est pas utilisé côté pages : une page renvoie le nom d'une vue, et le code HTTP est fixé par `@ResponseStatus` sur le gestionnaire. Il sera utilisé dans l'API, uniquement pour le 201 qui doit porter l'en-tête `Location`.
 - Les erreurs qui n'atteignent jamais un de nos contrôleurs (URL inconnue, accès refusé par Spring Security, exception imprévue) sont reprises par `ErreurControleur`, qui remplace la page « Whitelabel » de Spring Boot et affiche la même page `erreur.html`, avec un message générique en français : le détail technique d'une exception n'est jamais montré à l'utilisateur. Il est placé dans `controleur.web` pour que l'en-tête affiche toujours l'utilisateur connecté.
-  - Limite : ce contrôleur répond toujours en HTML. Une URL inconnue sous `/api` recevra donc une page HTML ; à revoir avec l'API.
-  - L'API aura son propre gestionnaire, qui répondra en JSON : les deux clients n'attendent pas le même format.
+  - Pour un client qui demande du JSON (un système externe), le même contrôleur renvoie un `ProblemDetail` au lieu de la page.
+- **L'API a son propre gestionnaire, `GestionnaireExceptionsApi`** (`@RestControllerAdvice` limité à `controleur.api`), qui traduit les mêmes exceptions métier en JSON (`ProblemDetail`, RFC 9457) : **404** pour une ressource introuvable, **409** pour une transition interdite, une modification concurrente ou un incident déjà en cours, **400** pour des données invalides (avec chaque champ en cause et son message), un corps qui n'est pas du JSON, ou un paramètre mal formé. Contrairement aux pages, un identifiant non numérique est ici un **400** : c'est la requête du programme qui est fausse, pas une page qui n'existerait pas.
 
 ### Interface
 - **Une identité propre plutôt que l'apparence Bootstrap par défaut** : une console de supervision sobre, où la couleur est réservée à l'information. La première version (barre noire, cartes ombrées, gros chiffres isolés, bleu standard) ressemblait à n'importe quel modèle ; elle a été reprise sur toute l'application :
@@ -546,34 +575,29 @@ Les transitions d'état passent par des requêtes POST vers des URL d'action (`/
 - Les méthodes de lecture (`trouverIncident`, `listerStations`, `listerIncidentsEnCours`, `calculerIndicateurs`…) ne sont pas annotées : chaque appel au repository s'exécute déjà dans sa propre transaction en lecture, et il n'y a rien à rendre atomique.
 - L'annotation utilisée est celle de Spring (`org.springframework.transaction.annotation.Transactional`), gérée nativement par Spring, et non celle de Jakarta.
 
-### Points métier à trancher
-- Un capteur qui signale une panne sur un équipement ayant déjà un incident actif : 409 Conflict, ou renvoi de l'incident existant ?
-
 ---
 
 ## LOT ALPHA
 
-Fonctionnalités retenues : pistes **8** et **2**. La piste **4** est une réalisation supplémentaire.
+Fonctionnalités retenues : pistes **8** (source de données externe) et **4** (cartographie). La piste **2** (graphiques) était prévue comme seconde fonctionnalité ; la carte, réalisée en premier, a pris sa place, et la barre de répartition du tableau de bord en reprend une partie (voir plus bas).
 
 Ces pistes ont été choisies parce qu'elles se renforcent : les incidents envoyés par les capteurs (8) alimentent les graphiques (2) et la carte (4). Les pistes 5 (journal métier) et 7 (qualité) étaient aussi envisagées ; la piste 6 a été écartée, car elle ferait appeler par nos propres pages l'API réservée aux systèmes externes, avec un second mode d'authentification à gérer.
 
 ### Fonctionnalité transverse 1 : source de données externe (piste 8)
 - **Besoin** : des capteurs installés sur les équipements déclarent automatiquement les pannes, sans intervention humaine.
 - **Périmètre envisagé** : endpoint `POST /api/incidents` sécurisé par clé d'API ; l'équipement est désigné par sa référence (le capteur ne connaît pas l'identifiant technique) ; un client de test simule plusieurs capteurs qui envoient des pannes.
-- Choix et essais : *à compléter*
-- Ce qui fonctionne : *à compléter*
-- Difficultés : *à compléter*
-- Reste à faire : *à compléter*
+- **Choix et essais** (détail dans CHOIX TECHNIQUES, API REST et capteurs) :
+  - la même API sert F12 (consulter les incidents, modifier leur état) et la piste 8 (déclarer une panne) : un capteur est un système externe comme un autre ;
+  - une clé d'API dans un en-tête plutôt qu'un compte technique en HTTP Basic : rien à créer dans la table des utilisateurs, et l'API reste séparée des profils de l'application ;
+  - un 409 avec l'incident existant quand l'équipement a déjà un incident en cours, pour qu'un capteur qui répète son signal ne crée pas de doublon ;
+  - le simulateur est un programme Java autonome plutôt qu'un script `curl` : il tourne de la même façon sous Windows, macOS et Linux, et montre ce que ferait un vrai système externe.
+- **Ce qui fonctionne** : déclaration d'une panne par référence (201 et `Location`), refus d'un doublon (409), d'une référence inconnue (404) et de données invalides (400) ; consultation et résolution par l'API ; 401 en JSON sans clé, 403 pour un utilisateur des pages ; documentation Swagger avec saisie de la clé ; simulateur qui alimente le tableau de bord en direct. Tout est couvert par les tests de `IncidentApiControleurTest` et `IncidentServiceTest`.
+- **Difficultés** :
+  - la sécurité des pages redirigeait toute requête non authentifiée vers la page de connexion, y compris celles de l'API : il a fallu une seconde chaîne Spring Security, dédiée à `/api/**`, avec ses propres réponses en JSON ;
+  - un premier test montrait qu'un utilisateur des pages recevait un 403 au corps vide : la réponse de refus a été écrite en JSON, comme le 401.
+- **Reste à faire** : une clé par capteur (aujourd'hui, une clé unique pour tous les systèmes externes), et l'enregistrement du capteur qui a signalé la panne.
 
-### Fonctionnalité transverse 2 : visualisation des données (piste 2)
-- **Besoin** : donner au responsable d'exploitation une vue d'ensemble de l'activité.
-- **Périmètre envisagé** : répartition des incidents par station et par type d'équipement, évolution des délais de résolution, note moyenne des prestataires. Les agrégations sont faites côté serveur (repository et service) ; le front ne fait qu'afficher.
-- Choix et essais : *à compléter*
-- Ce qui fonctionne : *à compléter*
-- Difficultés : *à compléter*
-- Reste à faire : *à compléter*
-
-### Réalisation supplémentaire : cartographie du réseau (piste 4)
+### Fonctionnalité transverse 2 : cartographie du réseau (piste 4)
 - **Besoin** : voir d'un coup d'œil où se trouvent les problèmes sur le réseau.
 - **Périmètre envisagé** : carte des stations (Leaflet + OpenStreetMap) ; la couleur de chaque station est calculée par le service à partir de ses incidents actifs, avec la même logique que RG3 ; un clic sur une station mène à ses équipements (F2).
 - **Choix et essais** :
@@ -583,6 +607,11 @@ Ces pistes ont été choisies parce qu'elles se renforcent : les incidents envoy
 - **Ce qui fonctionne** : les 6 stations sont placées et colorées selon leur incident le plus urgent ; la bulle de chaque station donne sa situation, son nombre d'incidents en cours et un lien vers ses équipements ; la carte se cadre automatiquement sur l'ensemble des stations ; l'onglet Liste affiche les mêmes informations sous forme de tableau.
 - **Difficultés** : Leaflet ne peut pas calculer la taille d'une carte cachée dans un onglet inactif ; c'est une des raisons pour lesquelles l'onglet est choisi par l'URL et la carte créée seulement quand elle est affichée.
 - **Reste à faire** : la carte ne se met pas à jour toute seule (il faut recharger la page) ; filtrer les stations affichées par niveau serait utile avec un réseau plus grand.
+
+### Piste 2 (visualisation des données) : prévue, en partie couverte
+- **Besoin** : donner au responsable d'exploitation une vue d'ensemble de l'activité.
+- **Ce qui a été fait** : la barre de répartition des incidents en cours par niveau, et les indicateurs du tableau de bord (dont le délai moyen de résolution calculé par la requête SQL native). Les agrégations sont faites côté serveur ; le navigateur ne fait qu'afficher.
+- **Pourquoi elle n'a pas été menée jusqu'au bout** : la carte (piste 4), réalisée en premier, a pris la place de seconde fonctionnalité transverse ; le temps restant a été consacré au socle (F11, F12) et à la qualité de l'interface. Les graphiques prévus (répartition par station et par type, évolution des délais, notes des prestataires) restent à faire.
 
 ---
 

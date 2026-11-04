@@ -1,7 +1,6 @@
 package fr.efrei.downlyzer.exception;
 
-// Action refusée au profil connecté selon l'état de la donnée (RG11) ; les routes interdites
-// à un profil sont, elles, bloquées en amont par Spring Security
+// refusé à cause du profil et de l'état de l'incident (les routes interdites passent par spring security)
 public class ActionNonAutoriseeException extends ExceptionMetier {
 
     public ActionNonAutoriseeException(String message) {

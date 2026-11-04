@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-// RG3-RG4 : les cas limites du §7.8, avec une heure fixe pour que le résultat ne dépende pas du jour du test
+// heure fixe pour que le résultat dépende pas du jour où on lance le test
 class PolitiqueUrgenceTest {
 
     private static final LocalDateTime MAINTENANT = LocalDateTime.of(2026, 10, 14, 12, 0);

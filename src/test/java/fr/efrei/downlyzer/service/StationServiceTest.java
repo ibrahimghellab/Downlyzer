@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-// Piste 4 : la situation de chaque station, avec la vraie politique d'urgence et une horloge figée
+// vraie politique d'urgence, repositories simulés et horloge figée
 class StationServiceTest {
 
     private static final LocalDateTime MAINTENANT = LocalDateTime.of(2026, 10, 14, 12, 0);

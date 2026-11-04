@@ -18,11 +18,10 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-// F11 : tableau de bord du responsable d'exploitation
 @Service
 public class TableauDeBordService {
 
-    // Période du délai moyen de résolution : assez longue pour avoir des résolutions, assez courte pour rester actuelle
+    // assez long pour avoir des résolutions, assez court pour rester d'actualité
     static final Duration PERIODE_DELAI_MOYEN = Duration.ofDays(30);
 
     private static final Comparator<LigneTableauDeBord> PAR_URGENCE =
@@ -51,8 +50,7 @@ public class TableauDeBordService {
         this.horloge = horloge;
     }
 
-    // Les filtres station et type sont appliqués par la base ; le niveau, calculé à partir de l'heure, ne peut l'être qu'ici.
-    // Un filtre ou un ordre null n'est pas appliqué (ordre par défaut : urgence)
+    // station et type filtrés par la base, le niveau ici car il dépend de l'heure
     public List<LigneTableauDeBord> listerIncidentsEnCours(Long stationId, Long typeEquipementId,
                                                            NiveauAttention niveau, OrdreTableauDeBord ordre) {
         LocalDateTime maintenant = LocalDateTime.now(horloge);
@@ -64,8 +62,7 @@ public class TableauDeBordService {
                 .toList();
     }
 
-    // Vue en colonnes : une colonne par niveau, du plus urgent au moins urgent, toujours présente même vide ;
-    // l'ordre des lignes à l'intérieur d'une colonne est celui de la liste reçue
+    // une colonne par niveau, même vide, en gardant l'ordre de tri
     public Map<NiveauAttention, List<LigneTableauDeBord>> regrouperParNiveau(List<LigneTableauDeBord> lignes) {
         Map<NiveauAttention, List<LigneTableauDeBord>> colonnes = new EnumMap<>(NiveauAttention.class);
         for (NiveauAttention niveau : NiveauAttention.values()) {
@@ -74,7 +71,7 @@ public class TableauDeBordService {
         return colonnes;
     }
 
-    // Calculés sur tout le réseau, indépendamment des filtres : ils résument la situation générale
+    // calculés sur tout le réseau, sans tenir compte des filtres
     public IndicateursTableauDeBord calculerIndicateurs() {
         LocalDateTime maintenant = LocalDateTime.now(horloge);
         List<LigneTableauDeBord> enCours = listerIncidentsEnCours(null, null, null, OrdreTableauDeBord.URGENCE);

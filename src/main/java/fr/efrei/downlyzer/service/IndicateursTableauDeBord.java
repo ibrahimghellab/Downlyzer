@@ -6,9 +6,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
-// F11 : indicateurs synthétiques sur l'ensemble du réseau. La répartition contient un élément par niveau,
-// du plus urgent au moins urgent ; delaiMoyenDeResolution vaut null quand rien n'a été résolu sur la période.
-// calculesLe est l'instant du calcul, affiché pour situer les niveaux d'attention, qui changent avec l'heure
+// delaiMoyenDeResolution est null si rien n'a été résolu sur la période
 public record IndicateursTableauDeBord(LocalDateTime calculesLe, long incidentsEnCours, List<PartNiveau> repartition,
                                        long equipementsHorsService, Duration delaiMoyenDeResolution) {
 

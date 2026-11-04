@@ -50,7 +50,7 @@
         <div class="card border-top-0 rounded-top-0">
             <div id="carte" class="carte-reseau" role="region" aria-label="Carte des stations du réseau"></div>
             <div class="card-body">
-                <!-- La carte place ses points à partir de cette liste, qui sert aussi de légende et de version texte -->
+                <!-- la carte lit ses points dans cette liste, qui sert aussi de légende -->
                 <ul class="list-inline mb-0" id="stations-carte">
                     <li class="list-inline-item mb-2" th:each="situation : ${situations}"
                         th:attr="data-id=${situation.id}, data-nom=${situation.nom}, data-latitude=${situation.latitude},

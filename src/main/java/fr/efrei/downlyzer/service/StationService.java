@@ -40,7 +40,7 @@ public class StationService {
         return stationRepository.findAllByOrderByNomAsc();
     }
 
-    // Piste 4 : une station prend le niveau de son incident en cours le plus urgent (RG3-RG4)
+    // une station prend le niveau de son incident le plus urgent
     public List<SituationStation> listerSituationsDesStations() {
         LocalDateTime maintenant = LocalDateTime.now(horloge);
         Map<Station, List<Incident>> incidentsEnCoursParStation =

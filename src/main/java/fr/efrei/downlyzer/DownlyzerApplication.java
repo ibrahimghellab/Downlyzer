@@ -7,11 +7,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class DownlyzerApplication {
 
     public static void main(String[] args) {
-
         SpringApplication.run(DownlyzerApplication.class, args);
-
-
     }
-
-
 }

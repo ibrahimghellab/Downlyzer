@@ -29,7 +29,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-// RG8 et F10 testées sans base de données : les repositories sont simulés et l'horloge est figée
+// sans base : repositories simulés et horloge figée
 class EvaluationServiceTest {
 
     private static final LocalDateTime MAINTENANT = LocalDateTime.of(2026, 10, 20, 12, 0);

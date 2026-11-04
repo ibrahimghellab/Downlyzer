@@ -12,7 +12,7 @@
       th:with="rouges=${indicateurs.rouges()}, oranges=${indicateurs.oranges()},
                enAttente=${indicateurs.enAttenteDAffectation()}">
 
-    <!-- Une phrase dit d'abord ce qui demande une action ; les chiffres viennent ensuite -->
+    <!-- d'abord ce qui demande une action, ensuite les chiffres -->
     <section class="situation">
         <div>
             <p class="surtitre"
@@ -77,8 +77,7 @@
         </div>
     </form>
 
-    <!-- Titre de la liste et choix de la vue sur une même ligne courte, séparée des filtres :
-         le sélecteur reste au même endroit quelle que soit la vue. Changer de vue garde les filtres en cours -->
+    <!-- choix de la vue séparé des filtres pour qu'il bouge pas -->
     <div class="entete-incidents">
         <h2 id="titre-incidents">Incidents en cours<span class="compteur" th:text="${lignes.size()}">10</span></h2>
         <nav class="choix-vue" aria-label="Présentation des incidents">
@@ -91,7 +90,6 @@
         </nav>
     </div>
 
-    <!-- Vue par niveau : une colonne par niveau d'attention, du plus urgent au moins urgent (RG3-RG4) -->
     <div class="colonnes" th:if="${vueColonnes}" aria-labelledby="titre-incidents">
         <section class="colonne" th:each="colonne : ${colonnes}" th:classappend="'couleur-' + ${colonne.key}"
                  th:attr="aria-labelledby=|colonne-${colonne.key}|">
@@ -126,7 +124,7 @@
         </section>
     </div>
 
-    <!-- Vue en liste : la répartition puis le tableau complet, pratique quand les incidents sont nombreux -->
+    <!-- liste complète, plus pratique quand il y a beaucoup d'incidents -->
     <th:block th:unless="${vueColonnes}">
         <section class="card mb-3" aria-labelledby="titre-repartition">
             <div class="card-body">

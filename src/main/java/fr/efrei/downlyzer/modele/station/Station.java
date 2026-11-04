@@ -16,7 +16,7 @@ public class Station {
     @Column(name = "code", nullable = false, length = 10, unique = true)
     private String code;
 
-    // Coordonnées GPS : elles servent à placer la station sur la carte du réseau (piste 4)
+    // coordonnées pour placer la station sur la carte
     @Column(name = "latitude", nullable = false)
     private double latitude;
 
