@@ -23,6 +23,8 @@ public class SecuriteConfiguration {
                         .requestMatchers(HttpMethod.POST, "/incidents/*/affectation", "/incidents/*/resolution",
                                 "/incidents/*/evaluation")
                         .hasRole("RESPONSABLE")
+                        // F11 : tableau de bord du responsable
+                        .requestMatchers("/tableau-de-bord").hasRole("RESPONSABLE")
                         // Piste 4 : l'onglet Carte est un paramètre de /stations, page ouverte à tous ; seul cet onglet est réservé
                         .requestMatchers(requete -> requete.getRequestURI().equals(requete.getContextPath() + "/stations")
                                 && "carte".equals(requete.getParameter("vue")))
@@ -30,7 +32,7 @@ public class SecuriteConfiguration {
                         .anyRequest().authenticated())
                 .formLogin(connexion -> connexion
                         .loginPage("/connexion")
-                        .defaultSuccessUrl("/stations")
+                        .defaultSuccessUrl("/")
                         .permitAll())
                 .logout(deconnexion -> deconnexion
                         .logoutUrl("/deconnexion")

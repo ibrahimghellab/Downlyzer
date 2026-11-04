@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" th:if="${vueCarte}">
 </head>
 <body>
-<header th:replace="~{fragments/entete :: entete}"></header>
+<header th:replace="~{fragments/entete :: entete('stations')}"></header>
 <main class="container pb-4">
     <h1 class="h2 mb-3">Stations du réseau</h1>
 
@@ -23,7 +23,7 @@
         </li>
     </ul>
 
-    <div class="card shadow-sm" th:classappend="${supervision} ? 'border-top-0 rounded-top-0'" th:unless="${vueCarte}">
+    <div class="card" th:classappend="${supervision} ? 'border-top-0 rounded-top-0'" th:unless="${vueCarte}">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead>
@@ -47,7 +47,7 @@
     </div>
 
     <th:block th:if="${vueCarte}">
-        <div class="card shadow-sm border-top-0 rounded-top-0">
+        <div class="card border-top-0 rounded-top-0">
             <div id="carte" class="carte-reseau" role="region" aria-label="Carte des stations du réseau"></div>
             <div class="card-body">
                 <!-- La carte place ses points à partir de cette liste, qui sert aussi de légende et de version texte -->

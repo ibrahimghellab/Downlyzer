@@ -7,9 +7,9 @@
     <th:block th:replace="~{fragments/entete :: styles}"></th:block>
 </head>
 <body>
-<header th:replace="~{fragments/entete :: entete}"></header>
+<header th:replace="~{fragments/entete :: entete('')}"></header>
 <main class="container pb-4">
-    <div class="card shadow-sm mx-auto carte-erreur">
+    <div class="card mx-auto carte-erreur">
         <div class="card-body p-4 text-center">
             <h1 class="h3" th:text="${titre}">Introuvable</h1>
             <p class="text-body-secondary" th:text="${message}">L'incident n° 999 n'existe pas.</p>

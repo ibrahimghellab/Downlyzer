@@ -7,7 +7,7 @@
     <th:block th:replace="~{fragments/entete :: styles}"></th:block>
 </head>
 <body>
-<header th:replace="~{fragments/entete :: entete}"></header>
+<header th:replace="~{fragments/entete :: entete('stations')}"></header>
 <main class="container pb-4">
     <a class="lien-retour" th:href="@{/stations/{id}(id=${equipement.station.id})}"
        th:text="'← ' + ${equipement.station.nom}">← Gare Centrale</a>
@@ -16,7 +16,7 @@
 
     <div class="alert alert-success" role="status" th:if="${succes}" th:text="${succes}">L'incident a bien été déclaré.</div>
 
-    <div class="card shadow-sm mb-4">
+    <div class="card mb-4">
         <div class="card-body">
             <dl class="row mb-0">
                 <dt class="col-sm-3">Station</dt>
@@ -39,7 +39,7 @@
 
     <p class="text-body-secondary" th:if="${incidents.isEmpty()}">Aucun incident n'a été signalé sur cet équipement.</p>
 
-    <div class="card shadow-sm" th:unless="${incidents.isEmpty()}">
+    <div class="card" th:unless="${incidents.isEmpty()}">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead>
@@ -54,10 +54,10 @@
                 <tbody>
                 <tr th:each="incident : ${incidents}">
                     <td class="text-nowrap" th:text="${#temporals.format(incident.dateOuverture, 'dd/MM/yyyy HH:mm')}">14/10/2026 08:00</td>
-                    <td><a th:href="@{/incidents/{id}(id=${incident.id})}" th:text="${incident.description}">Ascenseur bloqué</a></td>
+                    <td><a class="texte-tronque" th:href="@{/incidents/{id}(id=${incident.id})}" th:title="${incident.description}" th:text="${incident.description}">Ascenseur bloqué</a></td>
                     <td><span class="badge" th:classappend="'statut-' + ${incident.statut}"
                               th:text="#{statut.__${incident.statut}__}">Non affecté</span></td>
-                    <td th:text="${incident.prestataire?.nom} ?: '—'">Ascenso Maintenance</td>
+                    <td class="text-nowrap" th:text="${incident.prestataire?.nom} ?: '—'">Ascenso Maintenance</td>
                     <td class="text-nowrap" th:text="${incident.dateResolution != null} ? ${#temporals.format(incident.dateResolution, 'dd/MM/yyyy HH:mm')} : '—'">—</td>
                 </tr>
                 </tbody>

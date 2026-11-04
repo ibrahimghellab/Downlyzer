@@ -7,14 +7,14 @@
     <th:block th:replace="~{fragments/entete :: styles}"></th:block>
 </head>
 <body>
-<header th:replace="~{fragments/entete :: entete}"></header>
+<header th:replace="~{fragments/entete :: entete('stations')}"></header>
 <main class="container pb-4">
     <a class="lien-retour" th:href="@{/stations}">← Toutes les stations</a>
     <h1 class="h2 mb-3" th:text="${station.nom}">Gare Centrale</h1>
 
     <p class="text-body-secondary" th:if="${equipements.isEmpty()}">Aucun équipement n'est installé dans cette station.</p>
 
-    <div class="card shadow-sm" th:unless="${equipements.isEmpty()}">
+    <div class="card" th:unless="${equipements.isEmpty()}">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead>

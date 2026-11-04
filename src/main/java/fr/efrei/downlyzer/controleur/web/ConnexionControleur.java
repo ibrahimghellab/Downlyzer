@@ -1,5 +1,7 @@
 package fr.efrei.downlyzer.controleur.web;
 
+import fr.efrei.downlyzer.securite.UtilisateurConnecte;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
@@ -11,8 +13,9 @@ public class ConnexionControleur {
         return "connexion";
     }
 
+    // Page d'arrivée après la connexion : le responsable commence par la supervision (F11), l'agent par les stations
     @GetMapping("/")
-    public String accueil() {
-        return "redirect:/stations";
+    public String accueil(@AuthenticationPrincipal UtilisateurConnecte utilisateur) {
+        return utilisateur.getProfil().peutSuperviser() ? "redirect:/tableau-de-bord" : "redirect:/stations";
     }
 }

@@ -7,7 +7,7 @@
     <th:block th:replace="~{fragments/entete :: styles}"></th:block>
 </head>
 <body>
-<header th:replace="~{fragments/entete :: entete}"></header>
+<header th:replace="~{fragments/entete :: entete('')}"></header>
 <main class="container pb-4">
     <a class="lien-retour" th:href="@{/incidents/{id}(id=${incident.id})}" th:text="'← Incident n° ' + ${incident.id}">← Incident n° 12</a>
 
@@ -17,7 +17,7 @@
         station <span th:text="${incident.equipement.station.nom}">Gare Centrale</span>
     </p>
 
-    <div class="card shadow-sm">
+    <div class="card">
         <div class="card-body">
             <form method="post" th:action="@{/incidents/{id}/description(id=${incident.id})}" th:object="${modification}">
                 <div class="mb-3">

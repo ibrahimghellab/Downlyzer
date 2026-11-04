@@ -3,32 +3,50 @@
 <head>
     <!-- Feuilles de style communes à toutes les pages : incluses avec th:replace="~{fragments/entete :: styles}" -->
     <th:block th:fragment="styles">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
         <link rel="stylesheet" th:href="@{/css/style.css}">
     </th:block>
 </head>
 <body>
-<!-- En-tête commun à toutes les pages (F1) : inclus avec th:replace="~{fragments/entete :: entete}" -->
-<header th:fragment="entete" class="mb-4">
-    <nav class="navbar navbar-dark bg-dark">
-        <div class="container">
-            <div class="d-flex align-items-center gap-3">
-                <a class="navbar-brand fw-bold" th:href="@{/stations}">Downlyzer</a>
-                <div class="navbar-nav flex-row gap-3" th:if="${utilisateurConnecte != null}">
-                    <a class="nav-link" th:href="@{/stations}">Stations</a>
-                    <a class="nav-link" th:href="@{/historique}">Historique</a>
-                </div>
-            </div>
-            <div class="navbar-text text-light" th:if="${utilisateurConnecte != null}">
-                Bonjour <span th:text="${utilisateurConnecte.prenom}">Karim</span>
-                (<span th:text="#{profil.__${utilisateurConnecte.profil}__}">Agent de station</span>) |
-                <!-- La déconnexion est un POST, pour être protégée par le jeton CSRF -->
-                <form class="d-inline" method="post" th:action="@{/deconnexion}">
-                    <button type="submit" class="btn btn-link link-light p-0 align-baseline">Déconnectez-vous</button>
-                </form>
-            </div>
+<!-- Symbole de Downlyzer : une flèche vers le bas (« down ») dans un carré, partagé par l'en-tête et la connexion -->
+<svg th:fragment="symbole" class="symbole" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+    <rect width="26" height="26" rx="6" fill="#1f4fd1"/>
+    <path d="M7 8.5l6 6 6-6M7 15l6 6 6-6" fill="none" stroke="#fff" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+    <path d="M7 8.5l6 6 6-6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+
+<!-- En-tête commun à toutes les pages (F1) : inclus avec th:replace="~{fragments/entete :: entete('section')}",
+     où « section » est l'entrée de navigation à mettre en évidence (tableau-de-bord, stations, historique, ou vide) -->
+<header th:fragment="entete(section)" class="barre-application mb-4">
+    <div class="container">
+        <div class="d-flex align-items-center gap-4 align-self-stretch">
+            <a class="marque" th:href="@{/}" aria-label="Downlyzer, page d'accueil">
+                <svg th:replace="~{fragments/entete :: symbole}"></svg>
+                <span class="marque-nom">Downlyzer</span>
+            </a>
+            <nav class="navigation" aria-label="Navigation principale" th:if="${utilisateurConnecte != null}">
+                <a th:href="@{/tableau-de-bord}" th:if="${utilisateurConnecte.profil.peutSuperviser()}"
+                   th:classappend="${section == 'tableau-de-bord'} ? 'active'"
+                   th:attr="aria-current=${section == 'tableau-de-bord'} ? 'page'">Tableau de bord</a>
+                <a th:href="@{/stations}" th:classappend="${section == 'stations'} ? 'active'"
+                   th:attr="aria-current=${section == 'stations'} ? 'page'">Stations</a>
+                <a th:href="@{/historique}" th:classappend="${section == 'historique'} ? 'active'"
+                   th:attr="aria-current=${section == 'historique'} ? 'page'">Historique</a>
+            </nav>
         </div>
-    </nav>
+        <div class="utilisateur" th:if="${utilisateurConnecte != null}">
+            Bonjour <strong th:text="${utilisateurConnecte.prenom}">Karim</strong>
+            (<span th:text="#{profil.__${utilisateurConnecte.profil}__}">Agent de station</span>) |
+            <!-- La déconnexion est un POST, pour être protégée par le jeton CSRF -->
+            <form class="d-inline" method="post" th:action="@{/deconnexion}">
+                <button type="submit" class="btn btn-link p-0 align-baseline">Déconnectez-vous</button>
+            </form>
+        </div>
+    </div>
 </header>
 </body>
 </html>

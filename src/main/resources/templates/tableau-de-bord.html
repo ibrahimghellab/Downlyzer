@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tableau de bord — Downlyzer</title>
+    <th:block th:replace="~{fragments/entete :: styles}"></th:block>
+</head>
+<body>
+<header th:replace="~{fragments/entete :: entete('tableau-de-bord')}"></header>
+<main class="container pb-5"
+      th:with="rouges=${indicateurs.rouges()}, oranges=${indicateurs.oranges()},
+               enAttente=${indicateurs.enAttenteDAffectation()}">
+
+    <!-- Une phrase dit d'abord ce qui demande une action ; les chiffres viennent ensuite -->
+    <section class="situation">
+        <div>
+            <p class="surtitre"
+               th:text="|Tableau de bord · le ${#temporals.format(indicateurs.calculesLe, 'dd/MM/yyyy à HH:mm')}|">
+                Tableau de bord · le 04/11/2026 à 15:10</p>
+            <h1 class="phrase-situation">
+                <th:block th:if="${rouges > 0}"
+                          th:text="${rouges == 1} ? '1 incident attend un prestataire depuis 72 h ou plus'
+                                                  : |${rouges} incidents attendent un prestataire depuis 72 h ou plus|">
+                    7 incidents attendent un prestataire depuis 72 h ou plus</th:block>
+                <th:block th:if="${rouges == 0 and oranges > 0}"
+                          th:text="${oranges == 1} ? '1 incident attend un prestataire depuis 48 h ou plus'
+                                                   : |${oranges} incidents attendent un prestataire depuis 48 h ou plus|"></th:block>
+                <th:block th:if="${rouges == 0 and oranges == 0 and enAttente > 0}"
+                          th:text="|Aucune urgence : ${enAttente} en attente depuis moins de 48 h|"></th:block>
+                <th:block th:if="${enAttente == 0 and indicateurs.incidentsEnCours > 0}">Tous les incidents en cours sont pris en charge</th:block>
+                <th:block th:if="${indicateurs.incidentsEnCours == 0}">Aucun incident en cours sur le réseau</th:block>
+            </h1>
+        </div>
+        <dl class="chiffres-cles">
+            <div><dt>En cours</dt><dd th:text="${indicateurs.incidentsEnCours}">10</dd></div>
+            <div><dt>Sans prestataire</dt><dd th:text="${enAttente}">8</dd></div>
+            <div><dt>Équipements hors service</dt><dd th:text="${indicateurs.equipementsHorsService}">7</dd></div>
+            <div>
+                <dt>Délai moyen de résolution, 30 j</dt>
+                <dd>
+                    <th:block th:if="${indicateurs.delaiMoyenDeResolution != null}"><span
+                            th:replace="~{fragments/affichage :: duree(${indicateurs.delaiMoyenDeResolution})}">1 j 12 h</span></th:block>
+                    <th:block th:if="${indicateurs.delaiMoyenDeResolution == null}">—</th:block>
+                </dd>
+            </div>
+        </dl>
+    </section>
+
+    <form class="barre-filtres" method="get" th:action="@{/tableau-de-bord}" th:object="${filtre}">
+        <div class="filtres">
+            <input type="hidden" th:field="*{vue}">
+            <label class="visually-hidden" for="stationId">Station</label>
+            <select class="form-select form-select-sm" th:field="*{stationId}">
+                <option value="">Toutes les stations</option>
+                <option th:each="station : ${stations}" th:value="${station.id}" th:text="${station.nom}">Gare Centrale</option>
+            </select>
+            <label class="visually-hidden" for="typeEquipementId">Type d'équipement</label>
+            <select class="form-select form-select-sm" th:field="*{typeEquipementId}">
+                <option value="">Tous les types</option>
+                <option th:each="type : ${types}" th:value="${type.id}" th:text="${type.libelle}">Ascenseur</option>
+            </select>
+            <th:block th:unless="${vueColonnes}">
+                <label class="visually-hidden" for="niveau">Niveau d'attention</label>
+                <select class="form-select form-select-sm" th:field="*{niveau}">
+                    <option value="">Tous les niveaux</option>
+                    <option th:each="niveau : ${niveaux}" th:value="${niveau}" th:text="#{niveau.__${niveau}__}">Rouge</option>
+                </select>
+            </th:block>
+            <label class="visually-hidden" for="ordre">Trier par</label>
+            <select class="form-select form-select-sm" th:field="*{ordre}">
+                <option th:each="ordre : ${ordres}" th:value="${ordre}" th:text="|Trier : #{ordre.__${ordre}__}|">Trier : urgence</option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Filtrer</button>
+            <a class="btn btn-link btn-sm text-body-secondary"
+               th:href="@{/tableau-de-bord(vue=${filtre.vue})}">Réinitialiser</a>
+        </div>
+    </form>
+
+    <!-- Titre de la liste et choix de la vue sur une même ligne courte, séparée des filtres :
+         le sélecteur reste au même endroit quelle que soit la vue. Changer de vue garde les filtres en cours -->
+    <div class="entete-incidents">
+        <h2 id="titre-incidents">Incidents en cours<span class="compteur" th:text="${lignes.size()}">10</span></h2>
+        <nav class="choix-vue" aria-label="Présentation des incidents">
+            <a th:href="@{/tableau-de-bord(stationId=${filtre.stationId}, typeEquipementId=${filtre.typeEquipementId},
+                          ordre=${filtre.ordre}, vue='COLONNES')}"
+               th:classappend="${vueColonnes} ? 'active'" th:attr="aria-current=${vueColonnes} ? 'page'">Par niveau</a>
+            <a th:href="@{/tableau-de-bord(stationId=${filtre.stationId}, typeEquipementId=${filtre.typeEquipementId},
+                          ordre=${filtre.ordre}, vue='LISTE')}"
+               th:classappend="${!vueColonnes} ? 'active'" th:attr="aria-current=${!vueColonnes} ? 'page'">Liste</a>
+        </nav>
+    </div>
+
+    <!-- Vue par niveau : une colonne par niveau d'attention, du plus urgent au moins urgent (RG3-RG4) -->
+    <div class="colonnes" th:if="${vueColonnes}" aria-labelledby="titre-incidents">
+        <section class="colonne" th:each="colonne : ${colonnes}" th:classappend="'couleur-' + ${colonne.key}"
+                 th:attr="aria-labelledby=|colonne-${colonne.key}|">
+            <header class="colonne-entete">
+                <div>
+                    <h2 th:id="|colonne-${colonne.key}|"><span class="pastille" aria-hidden="true"></span><span
+                            th:text="#{colonne.__${colonne.key}__}">Rouge</span></h2>
+                    <p th:text="#{seuil.__${colonne.key}__}">72 h et plus sans prestataire</p>
+                </div>
+                <span class="colonne-compteur" th:text="${colonne.value.size()}">7</span>
+            </header>
+            <p class="colonne-vide" th:if="${colonne.value.isEmpty()}">Aucun incident</p>
+            <a class="fiche" th:each="ligne, etat : ${colonne.value}" th:if="${etat.index < fichesParColonne}"
+               th:href="@{/incidents/{id}(id=${ligne.incident.id})}">
+                <span class="fiche-titre">
+                    <strong th:text="${ligne.incident.equipement.reference}">ASC-003</strong>
+                    <span th:text="${ligne.incident.equipement.station.nom}">Université</span>
+                </span>
+                <span class="fiche-description" th:text="${ligne.incident.description}">Ascenseur PMR bloqué au niveau -1.</span>
+                <span class="fiche-pied">
+                    <span class="chiffres-alignes">
+                        <span th:text="${ligne.incident.prestataire != null} ? 'Ouvert depuis' : 'En attente depuis'">En attente depuis</span>
+                        <span th:replace="~{fragments/affichage :: duree(${ligne.dureeOuverture})}">6 j 17 h</span>
+                    </span>
+                    <span th:if="${ligne.incident.prestataire != null}" th:text="${ligne.incident.prestataire.nom}">Ascenso Maintenance</span>
+                </span>
+            </a>
+            <a class="colonne-suite" th:if="${colonne.value.size() > fichesParColonne}"
+               th:href="@{/tableau-de-bord(stationId=${filtre.stationId}, typeEquipementId=${filtre.typeEquipementId},
+                          ordre=${filtre.ordre}, niveau=${colonne.key}, vue='LISTE')}"
+               th:text="|Voir les ${colonne.value.size()} incidents|">Voir les 12 incidents</a>
+        </section>
+    </div>
+
+    <!-- Vue en liste : la répartition puis le tableau complet, pratique quand les incidents sont nombreux -->
+    <th:block th:unless="${vueColonnes}">
+        <section class="card mb-3" aria-labelledby="titre-repartition">
+            <div class="card-body">
+                <h2 class="h6 mb-3" id="titre-repartition">Répartition des incidents en cours</h2>
+                <p class="text-body-secondary mb-0" th:if="${indicateurs.incidentsEnCours == 0}">Aucun incident en cours.</p>
+                <th:block th:unless="${indicateurs.incidentsEnCours == 0}">
+                    <div class="repartition">
+                        <a class="repartition-part" th:each="part : ${indicateurs.repartition}" th:if="${part.nombre > 0}"
+                           th:classappend="'couleur-' + ${part.niveau}" th:style="|flex-grow: ${part.nombre}|"
+                           th:href="@{/tableau-de-bord(niveau=${part.niveau}, vue='LISTE')}"
+                           th:with="description=|#{niveau.__${part.niveau}__} : ${part.nombre} incident(s), ${#numbers.formatDecimal(part.pourcentage, 1, 0)} %|"
+                           th:attr="aria-label=|${description}. Afficher ces incidents.|">
+                            <span aria-hidden="true" th:text="${part.nombre}">3</span>
+                            <span class="infobulle" aria-hidden="true" th:text="${description}">Rouge : 3 incident(s), 27 %</span>
+                        </a>
+                    </div>
+                    <ul class="legende">
+                        <li th:each="part : ${indicateurs.repartition}">
+                            <span class="pastille" th:classappend="'couleur-' + ${part.niveau}" aria-hidden="true"></span>
+                            <span th:text="#{niveau.__${part.niveau}__}">Rouge — 72 h et plus</span>
+                            <strong th:text="${part.nombre}">3</strong>
+                        </li>
+                    </ul>
+                </th:block>
+            </div>
+        </section>
+
+        <section class="card" aria-labelledby="titre-incidents">
+            <p class="text-body-secondary m-3" th:if="${lignes.isEmpty()}">Aucun incident en cours ne correspond à ces filtres.</p>
+            <div class="table-responsive" th:unless="${lignes.isEmpty()}">
+                <table class="table table-hover align-middle tableau-incidents">
+                    <thead>
+                    <tr>
+                        <th>Niveau</th>
+                        <th>Ouvert depuis</th>
+                        <th>Station</th>
+                        <th>Équipement</th>
+                        <th>Incident</th>
+                        <th>Prestataire</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="ligne : ${lignes}" th:classappend="'couleur-' + ${ligne.niveau}">
+                        <td><span th:replace="~{fragments/affichage :: badgeSituation(${ligne.niveau})}">Rouge</span></td>
+                        <td class="text-nowrap chiffres-alignes"><span th:replace="~{fragments/affichage :: duree(${ligne.dureeOuverture})}">3 j 2 h</span></td>
+                        <td class="text-nowrap"><a th:href="@{/stations/{id}(id=${ligne.incident.equipement.station.id})}"
+                                                   th:text="${ligne.incident.equipement.station.nom}">Gare Centrale</a></td>
+                        <td class="text-nowrap"><a th:href="@{/equipements/{id}(id=${ligne.incident.equipement.id})}"
+                                                   th:text="${ligne.incident.equipement.reference}">ASC-001</a></td>
+                        <td><a class="texte-tronque" th:href="@{/incidents/{id}(id=${ligne.incident.id})}"
+                               th:title="${ligne.incident.description}" th:text="${ligne.incident.description}">Ascenseur bloqué</a></td>
+                        <td class="text-nowrap" th:text="${ligne.incident.prestataire?.nom} ?: 'En attente'">En attente</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </th:block>
+</main>
+</body>
+</html>

@@ -8,10 +8,14 @@
 </head>
 <body>
 <main class="container d-flex align-items-center justify-content-center min-vh-100">
-    <div class="card shadow-sm w-100 carte-connexion">
+    <div class="card w-100 carte-connexion">
         <div class="card-body p-4">
-            <h1 class="h3 mb-1">Downlyzer</h1>
-            <p class="text-body-secondary">Supervision des équipements et suivi des incidents</p>
+            <div class="marque mb-3">
+                <svg th:replace="~{fragments/entete :: symbole}"></svg>
+                Downlyzer
+            </div>
+            <h1 class="h5 mb-1">Connexion</h1>
+            <p class="text-body-secondary small mb-4">Supervision des équipements et suivi des incidents du réseau</p>
 
             <!-- Spring Security redirige vers /connexion?error quand le login ou le mot de passe est faux (F1) -->
             <div class="alert alert-danger" role="alert" th:if="${param.error}">

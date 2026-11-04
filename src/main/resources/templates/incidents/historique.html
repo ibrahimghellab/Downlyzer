@@ -7,14 +7,14 @@
     <th:block th:replace="~{fragments/entete :: styles}"></th:block>
 </head>
 <body>
-<header th:replace="~{fragments/entete :: entete}"></header>
+<header th:replace="~{fragments/entete :: entete('historique')}"></header>
 <main class="container pb-4">
     <h1 class="h2">Historique des incidents résolus</h1>
     <p class="text-body-secondary">Du plus récent au plus ancien, par date de résolution.</p>
 
     <p class="text-body-secondary" th:if="${incidents.isEmpty()}">Aucun incident n'a encore été résolu.</p>
 
-    <div class="card shadow-sm" th:unless="${incidents.isEmpty()}">
+    <div class="card" th:unless="${incidents.isEmpty()}">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead>
@@ -30,11 +30,11 @@
                 <tbody>
                 <tr th:each="incident : ${incidents}" th:with="evaluation=${evaluations.get(incident.id)}">
                     <td class="text-nowrap" th:text="${#temporals.format(incident.dateResolution, 'dd/MM/yyyy HH:mm')}">15/10/2026 16:00</td>
-                    <td><a th:href="@{/incidents/{id}(id=${incident.id})}" th:text="${incident.description}">Bourrage de billets</a></td>
-                    <td><a th:href="@{/equipements/{id}(id=${incident.equipement.id})}"
+                    <td><a class="texte-tronque" th:href="@{/incidents/{id}(id=${incident.id})}" th:title="${incident.description}" th:text="${incident.description}">Bourrage de billets</a></td>
+                    <td class="text-nowrap"><a th:href="@{/equipements/{id}(id=${incident.equipement.id})}"
                            th:text="${incident.equipement.reference}">DIS-001</a></td>
-                    <td th:text="${incident.equipement.station.nom}">Gare Centrale</td>
-                    <td th:text="${incident.prestataire?.nom} ?: '—'">ValiTech Contrôle</td>
+                    <td class="text-nowrap" th:text="${incident.equipement.station.nom}">Gare Centrale</td>
+                    <td class="text-nowrap" th:text="${incident.prestataire?.nom} ?: '—'">ValiTech Contrôle</td>
                     <td class="text-nowrap">
                         <th:block th:if="${evaluation != null}"><span th:replace="~{fragments/affichage :: etoiles(${evaluation.note})}">★★★★★</span></th:block>
                         <span class="badge text-bg-warning" th:if="${evaluation == null and incident.estEvaluable()}">À évaluer</span>

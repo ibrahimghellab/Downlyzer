@@ -7,7 +7,7 @@
     <th:block th:replace="~{fragments/entete :: styles}"></th:block>
 </head>
 <body>
-<header th:replace="~{fragments/entete :: entete}"></header>
+<header th:replace="~{fragments/entete :: entete('')}"></header>
 <main class="container pb-4">
     <a class="lien-retour" th:href="@{/equipements/{id}(id=${incident.equipement.id})}"
        th:text="'← ' + ${incident.equipement.reference}">← ASC-001</a>
@@ -20,7 +20,7 @@
 
     <div class="alert alert-success" role="status" th:if="${succes}" th:text="${succes}">La description a bien été modifiée.</div>
 
-    <div class="card shadow-sm mb-4">
+    <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h2 class="h5 mb-0">Description</h2>
             <a class="btn btn-outline-primary btn-sm" th:if="${descriptionModifiable}"
@@ -50,7 +50,7 @@
         </div>
     </div>
 
-    <div class="card shadow-sm mb-4">
+    <div class="card mb-4">
         <div class="card-header">
             <h2 class="h5 mb-0">Prise en charge</h2>
         </div>
@@ -96,7 +96,7 @@
         </div>
     </div>
 
-    <div class="card shadow-sm mb-4" th:if="${affectationEtResolutionPossibles}">
+    <div class="card mb-4" th:if="${affectationEtResolutionPossibles}">
         <div class="card-header">
             <h2 class="h5 mb-0">Déclarer l'incident résolu</h2>
         </div>
@@ -118,7 +118,7 @@
     </div>
 
     <th:block th:if="${incident.estResolu()}">
-        <div class="card shadow-sm mb-4">
+        <div class="card mb-4">
             <div class="card-header">
                 <h2 class="h5 mb-0">Résolution</h2>
             </div>
@@ -132,7 +132,7 @@
             </div>
         </div>
 
-        <div class="card shadow-sm">
+        <div class="card">
             <div class="card-header">
                 <h2 class="h5 mb-0">Évaluation du prestataire</h2>
             </div>
