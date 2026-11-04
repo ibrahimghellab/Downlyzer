@@ -62,6 +62,8 @@ mvn verify
 ```
 Les tests unitaires et les tests des pages n'ont besoin ni de base ni de variables d'environnement. Seul `DownlyzerApplicationTests` (vérification que toute l'application démarre) se connecte à la base : il faut que MariaDB soit démarrée et que `DB_USERNAME` et `DB_PASSWORD` soient définies, comme pour lancer l'application.
 
+Tous les tests, y compris `DownlyzerApplicationTests`, sont aussi lancés par GitHub Actions à chaque push sur `master` et sur chaque pull request (onglet *Actions* du dépôt, fichier `.github/workflows/tests.yml`).
+
 ### Comptes de test
 
 | Profil | Login | Mot de passe |
@@ -82,6 +84,13 @@ Les mots de passe sont stockés hachés en BCrypt dans la base.
 
 ### Application déployée
 - URL : *à compléter*
+- Comptes : les mêmes que ci-dessus (Comptes de test).
+- Hébergement : Railway, un service pour l'application (construit à partir du `Dockerfile`) et un service MariaDB.
+- Pour remettre les données de démonstration à zéro sur la base distante (adresse et port donnés par Railway, onglet *Connect* de la base) :
+  ```bash
+  mariadb -h <hôte> -P <port> -u root -p --default-character-set=utf8mb4 --init-command="SET time_zone='+01:00'" < db/create.sql
+  ```
+  `--init-command` met la session dans le fuseau de Paris (heure d'hiver), le même que celui de l'application : sans lui, `NOW()` serait en UTC et tous les incidents seraient décalés d'une heure.
 
 ### Limites connues
 - Le script de données utilise `NOW()` de MariaDB et l'application l'heure de la JVM : les deux doivent être dans le **même fuseau horaire**, sinon les seuils sont décalés (un incident de 47 h pourrait apparaître orange).
@@ -283,6 +292,13 @@ Ces contraintes ne remplacent pas les contrôles de la couche service : elles é
   - Le contenu de la page est vérifié par quelques textes attendus (`containsString`), pour s'assurer que le template s'affiche réellement sans erreur.
 - **Noms des tests** : chaque méthode est nommée comme une phrase qui décrit le comportement attendu (`unAgentNePeutPlusModifierLaDescriptionDUnIncidentAffecte`), conformément à la fiche *Nommage* : un test qui échoue dit directement quelle règle est cassée.
 - Commande : `mvn verify` (voir README pour `DownlyzerApplicationTests`, qui a besoin de la base).
+- **Intégration continue avec GitHub Actions** (outil cité par la piste 7 du lot alpha, qui n'est pas l'une de nos deux pistes) : à chaque push sur `master` et sur chaque pull request, GitHub lance `./mvnw -B verify` sur une machine neuve. Un oubli (fichier non commité, test cassé, dépendance propre à notre poste) se voit tout de suite, et la croix rouge ou la coche verte reste attachée à chaque commit dans l'historique.
+  - **Une vraie base MariaDB dans le job** (conteneur `services`) plutôt que de sauter `DownlyzerApplicationTests` : c'est le seul test qui démarre toute l'application, et avec `ddl-auto=validate` il vérifie que les entités correspondent exactement au schéma de `db/create.sql`. C'est précisément l'erreur qu'un commit risque d'introduire sans qu'aucun test unitaire ne la voie.
+  - **La base est créée par le même `db/create.sql` et le même compte `downlyzer_app`** (mêmes droits) qu'en local : la CI teste la procédure du README, pas une configuration à part. Le script est envoyé au client `mariadb` du conteneur (`docker exec`), pour ne pas dépendre du client MySQL installé sur la machine de GitHub.
+  - **MariaDB 11.4**, version maintenue à long terme, au-dessus du minimum 10.6 d'Hibernate 7 (voir Limites connues).
+  - **Mots de passe écrits en clair dans le fichier du workflow** : la base n'existe que le temps du job, sur une machine jetable, et n'est joignable de nulle part ailleurs. Ce ne sont pas des secrets ; les vrais (base de production, clé d'API) ne sont jamais dans le dépôt. `DOWNLYZER_API_KEY` n'est pas définie : l'application démarre quand même, l'API refuse simplement tout (testé à part par MockMvc).
+  - **`cache: maven`** dans `setup-java` : les dépendances sont gardées d'un job à l'autre tant que `pom.xml` ne change pas, ce qui évite de tout retélécharger à chaque push.
+  - **Droit d'exécution ajouté à `mvnw` dans Git** (`git update-index --chmod=+x`) : le fichier avait été enregistré depuis Windows sans ce droit, et `./mvnw` échouait sous Linux.
 - Couvert :
   - service des incidents (`IncidentServiceTest`, 22 tests) : déclaration par un capteur (source `CAPTEUR`, sans déclarant, équipement hors service), référence inconnue, pas de doublon quand l'équipement a déjà un incident en cours, liste de l'API avec ou sans statut ;
     - F4 : un incident déclaré démarre non affecté, à l'heure de l'horloge, et l'équipement passe hors service ;
@@ -540,6 +556,17 @@ Les transitions d'état passent par des requêtes POST vers des URL d'action (`/
 - **Identifiants en français**, issus du vocabulaire du domaine (`Incident`, `Prestataire`, `declarerIncident`, `peutModifierDescription`), dans une seule langue (§7.3). Les termes imposés par Java ou Spring (`Repository`, `get`/`set`) restent en anglais.
 - **Messages de commit préfixés par la fonctionnalité** (`F4 : déclaration d'un incident`) : l'historique se lit fonctionnalité par fonctionnalité (§7.10).
 - `target/` et `.idea/` sont ignorés par Git : ils sont produits par Maven et par l'IDE, et `.idea/` peut contenir les variables d'environnement (donc le mot de passe de la base).
+
+### Déploiement (§7.9)
+- **Railway** : il héberge à la fois l'application et une base MariaDB, se branche directement sur le dépôt GitHub (chaque push redéploie) et propose un essai gratuit sans carte bancaire. Render a été écarté car sa base gratuite est PostgreSQL uniquement : il aurait fallu changer de SGBD, de pilote et réécrire la requête native (`TIMESTAMPDIFF` n'existe pas en PostgreSQL).
+- **MariaDB récente côté serveur** plutôt que MySQL : même SGBD qu'en local, donc même pilote (`mariadb-java-client`) et même dialecte Hibernate, et l'avertissement de version de MariaDB 10.4 disparaît (voir Limites connues).
+- **`Dockerfile` en deux étapes** : une image Maven construit le jar, puis seule une image avec le JRE 21 le lance. L'image finale ne contient ni Maven, ni le code source, ni le dossier `.m2`. Le `pom.xml` est copié avant le code pour que Docker garde les dépendances en cache tant qu'il ne change pas. `.dockerignore` exclut `target/`, `.idea/`, `.git/` et le fichier de clé du client HTTP.
+- **Tests sautés dans l'image (`-DskipTests`)** : `DownlyzerApplicationTests` a besoin d'une base, qui n'existe pas pendant la construction. Ils sont lancés par le pipeline GitHub Actions, qui a une base (voir TESTS).
+- **`server.port=${PORT:8080}`** : l'hébergeur choisit le port et le donne dans la variable `PORT` ; en local, rien ne change.
+- **`server.forward-headers-strategy=framework`** : Railway reçoit les requêtes en HTTPS et les transmet à l'application en HTTP. Ce réglage fait lire à Spring les en-têtes `X-Forwarded-*` du proxy : l'en-tête `Location` d'un 201 et les redirections (après connexion par exemple) restent en `https://`.
+- **`TZ=Europe/Paris` dans l'image** : les serveurs sont en UTC. L'horloge de l'application (`Clock.systemDefaultZone()`) et le `NOW()` du script de données doivent être dans le même fuseau (voir Limites connues), d'où aussi le `--init-command` au chargement du script.
+- **Mêmes variables d'environnement qu'en local** (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `DOWNLYZER_API_KEY`), saisies dans l'onglet *Variables* de Railway : aucun secret dans le dépôt, et aucune ligne de code propre au déploiement. La clé d'API de production est différente de celle utilisée en local.
+- **Compte `downlyzer_app` aussi en production**, avec les mêmes droits (`SELECT`, `INSERT`, `UPDATE`, `DELETE`). Il est créé pour `'%'` et non `'localhost'`, car l'application tourne dans un autre conteneur que la base ; la base n'est joignable que par le réseau privé de Railway et par l'adresse publique protégée par mot de passe qui sert à charger le script.
 
 ### SOLID
 - **S — Responsabilité unique (appliqué)** :
