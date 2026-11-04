@@ -14,4 +14,5 @@ COPY --from=construction /app/target/*.jar downlyzer.jar
 # même fuseau que la base, sinon les seuils 48 h / 72 h sont décalés
 ENV TZ=Europe/Paris
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "downlyzer.jar"]
+# render gratuit donne 512 Mo, par défaut java en prend qu'un quart pour le tas
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "downlyzer.jar"]

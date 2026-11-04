@@ -9,22 +9,39 @@ jobs:
   tests:
     runs-on: ubuntu-latest
 
+    # mariadb comme en local, mysql comme la base déployée sur aiven
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: mariadb:11.4
+            client: mariadb
+            sante: healthcheck.sh --connect --innodb_initialized
+            url: jdbc:mariadb://localhost:3306/downlyzer
+          - image: mysql:8.4
+            client: mysql
+            sante: mysqladmin ping -h 127.0.0.1 -proot
+            url: jdbc:mariadb://localhost:3306/downlyzer?sslMode=trust
+
+    name: tests (${{ matrix.image }})
+
     # une vraie base pour DownlyzerApplicationTests, jetée à la fin du job
     services:
-      mariadb:
-        image: mariadb:11.4
+      base:
+        image: ${{ matrix.image }}
         env:
-          MARIADB_ROOT_PASSWORD: root
+          MYSQL_ROOT_PASSWORD: root
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-cmd="${{ matrix.sante }}"
           --health-interval=5s
           --health-timeout=5s
-          --health-retries=10
+          --health-retries=20
 
     # base qui existe que le temps du job, ces mots de passe protègent rien
     env:
+      DB_URL: ${{ matrix.url }}
       DB_USERNAME: downlyzer_app
       DB_PASSWORD: ci
 
@@ -37,11 +54,11 @@ jobs:
           java-version: 21
           cache: maven
 
-      # le script et le compte sont les mêmes qu'en local, lancés avec le client mariadb du conteneur
+      # le script et le compte sont les mêmes qu'en local, lancés avec le client du conteneur
       - name: Création de la base
         run: |
-          docker exec -i ${{ job.services.mariadb.id }} mariadb -u root -proot --default-character-set=utf8mb4 < db/create.sql
-          docker exec -i ${{ job.services.mariadb.id }} mariadb -u root -proot -e "CREATE USER 'downlyzer_app'@'%' IDENTIFIED BY 'ci'; GRANT SELECT, INSERT, UPDATE, DELETE ON downlyzer.* TO 'downlyzer_app'@'%';"
+          docker exec -i ${{ job.services.base.id }} ${{ matrix.client }} -u root -proot --default-character-set=utf8mb4 < db/create.sql
+          docker exec -i ${{ job.services.base.id }} ${{ matrix.client }} -u root -proot -e "CREATE USER 'downlyzer_app'@'%' IDENTIFIED BY 'ci'; GRANT SELECT, INSERT, UPDATE, DELETE ON downlyzer.* TO 'downlyzer_app'@'%';"
 
       - name: Tests
         run: ./mvnw -B verify

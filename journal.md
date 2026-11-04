@@ -62,7 +62,7 @@ mvn verify
 ```
 Les tests unitaires et les tests des pages n'ont besoin ni de base ni de variables d'environnement. Seul `DownlyzerApplicationTests` (vérification que toute l'application démarre) se connecte à la base : il faut que MariaDB soit démarrée et que `DB_USERNAME` et `DB_PASSWORD` soient définies, comme pour lancer l'application.
 
-Tous les tests, y compris `DownlyzerApplicationTests`, sont aussi lancés par GitHub Actions à chaque push sur `master` et sur chaque pull request (onglet *Actions* du dépôt, fichier `.github/workflows/tests.yml`).
+Tous les tests, y compris `DownlyzerApplicationTests`, sont aussi lancés par GitHub Actions, sur MariaDB et sur MySQL, à chaque push sur `master` et sur chaque pull request (onglet *Actions* du dépôt, fichier `.github/workflows/tests.yml`).
 
 ### Comptes de test
 
@@ -85,12 +85,9 @@ Les mots de passe sont stockés hachés en BCrypt dans la base.
 ### Application déployée
 - URL : *à compléter*
 - Comptes : les mêmes que ci-dessus (Comptes de test).
-- Hébergement : Railway, un service pour l'application (construit à partir du `Dockerfile`) et un service MariaDB.
-- Pour remettre les données de démonstration à zéro sur la base distante (adresse et port donnés par Railway, onglet *Connect* de la base) :
-  ```bash
-  mariadb -h <hôte> -P <port> -u root -p --default-character-set=utf8mb4 --init-command="SET time_zone='+01:00'" < db/create.sql
-  ```
-  `--init-command` met la session dans le fuseau de Paris (heure d'hiver), le même que celui de l'application : sans lui, `NOW()` serait en UTC et tous les incidents seraient décalés d'une heure.
+- Hébergement : l'application sur Render (construite à partir du `Dockerfile`), la base sur Aiven (MySQL 8).
+- L'offre gratuite de Render met l'application en veille après 15 minutes sans visite : **le premier chargement peut prendre environ une minute**, les suivants sont immédiats.
+- Pour remettre les données de démonstration à zéro sur la base distante : ouvrir une connexion vers Aiven dans MySQL Workbench (hôte, port et utilisateur `avnadmin` donnés par la console Aiven, SSL obligatoire), ouvrir `db/create.sql`, ajouter en première ligne `SET time_zone = '+01:00';` sans enregistrer le fichier, puis tout exécuter. Cette ligne met la session dans le fuseau de Paris (heure d'hiver), le même que celui de l'application : sans elle, `NOW()` serait en UTC et tous les incidents seraient décalés d'une heure.
 
 ### Limites connues
 - Le script de données utilise `NOW()` de MariaDB et l'application l'heure de la JVM : les deux doivent être dans le **même fuseau horaire**, sinon les seuils sont décalés (un incident de 47 h pourrait apparaître orange).
@@ -292,10 +289,10 @@ Ces contraintes ne remplacent pas les contrôles de la couche service : elles é
   - Le contenu de la page est vérifié par quelques textes attendus (`containsString`), pour s'assurer que le template s'affiche réellement sans erreur.
 - **Noms des tests** : chaque méthode est nommée comme une phrase qui décrit le comportement attendu (`unAgentNePeutPlusModifierLaDescriptionDUnIncidentAffecte`), conformément à la fiche *Nommage* : un test qui échoue dit directement quelle règle est cassée.
 - Commande : `mvn verify` (voir README pour `DownlyzerApplicationTests`, qui a besoin de la base).
-- **Intégration continue avec GitHub Actions** (outil cité par la piste 7 du lot alpha, qui n'est pas l'une de nos deux pistes) : à chaque push sur `master` et sur chaque pull request, GitHub lance `./mvnw -B verify` sur une machine neuve. Un oubli (fichier non commité, test cassé, dépendance propre à notre poste) se voit tout de suite, et la croix rouge ou la coche verte reste attachée à chaque commit dans l'historique.
-  - **Une vraie base MariaDB dans le job** (conteneur `services`) plutôt que de sauter `DownlyzerApplicationTests` : c'est le seul test qui démarre toute l'application, et avec `ddl-auto=validate` il vérifie que les entités correspondent exactement au schéma de `db/create.sql`. C'est précisément l'erreur qu'un commit risque d'introduire sans qu'aucun test unitaire ne la voie.
-  - **La base est créée par le même `db/create.sql` et le même compte `downlyzer_app`** (mêmes droits) qu'en local : la CI teste la procédure du README, pas une configuration à part. Le script est envoyé au client `mariadb` du conteneur (`docker exec`), pour ne pas dépendre du client MySQL installé sur la machine de GitHub.
-  - **MariaDB 11.4**, version maintenue à long terme, au-dessus du minimum 10.6 d'Hibernate 7 (voir Limites connues).
+- **Intégration continue avec GitHub Actions** (outil cité par la piste 7 du lot alpha, qui n'est pas l'une de nos deux pistes) : à chaque push sur `master` et sur chaque pull request, GitHub lance `./mvnw -B verify` sur une machine neuve, avec MariaDB puis avec MySQL. Un oubli (fichier non commité, test cassé, dépendance propre à notre poste) se voit tout de suite, et la croix rouge ou la coche verte reste attachée à chaque commit dans l'historique.
+  - **Une vraie base dans le job** (conteneur `services`) plutôt que de sauter `DownlyzerApplicationTests` : c'est le seul test qui démarre toute l'application, et avec `ddl-auto=validate` il vérifie que les entités correspondent exactement au schéma de `db/create.sql`. C'est précisément l'erreur qu'un commit risque d'introduire sans qu'aucun test unitaire ne la voie.
+  - **La base est créée par le même `db/create.sql` et le même compte `downlyzer_app`** (mêmes droits) qu'en local : la CI teste la procédure du README, pas une configuration à part. Le script est envoyé au client du conteneur (`mariadb` ou `mysql`, avec `docker exec`), pour ne pas dépendre du client installé sur la machine de GitHub.
+  - **Deux jobs en parallèle, un sur MariaDB 11.4 et un sur MySQL 8.4** (`matrix`) : MariaDB comme en local, MySQL comme la base déployée (voir CHOIX TECHNIQUES, Déploiement). Le même script, le même compte et les mêmes tests doivent passer sur les deux, ce qu'on ne pouvait pas vérifier sur notre poste. MariaDB 11.4 et MySQL 8.4 sont les versions maintenues à long terme, au-dessus du minimum d'Hibernate 7. `fail-fast: false` : si un job échoue, l'autre va quand même au bout, pour savoir si le problème vient d'une seule base ou des deux. Côté MySQL, l'URL ajoute `sslMode=trust`, car MySQL 8 n'envoie le mot de passe que sur une connexion chiffrée ; vérifier le certificat n'aurait pas de sens pour un conteneur créé pour le job.
   - **Mots de passe écrits en clair dans le fichier du workflow** : la base n'existe que le temps du job, sur une machine jetable, et n'est joignable de nulle part ailleurs. Ce ne sont pas des secrets ; les vrais (base de production, clé d'API) ne sont jamais dans le dépôt. `DOWNLYZER_API_KEY` n'est pas définie : l'application démarre quand même, l'API refuse simplement tout (testé à part par MockMvc).
   - **`cache: maven`** dans `setup-java` : les dépendances sont gardées d'un job à l'autre tant que `pom.xml` ne change pas, ce qui évite de tout retélécharger à chaque push.
   - **Droit d'exécution ajouté à `mvnw` dans Git** (`git update-index --chmod=+x`) : le fichier avait été enregistré depuis Windows sans ce droit, et `./mvnw` échouait sous Linux.
@@ -558,15 +555,22 @@ Les transitions d'état passent par des requêtes POST vers des URL d'action (`/
 - `target/` et `.idea/` sont ignorés par Git : ils sont produits par Maven et par l'IDE, et `.idea/` peut contenir les variables d'environnement (donc le mot de passe de la base).
 
 ### Déploiement (§7.9)
-- **Railway** : il héberge à la fois l'application et une base MariaDB, se branche directement sur le dépôt GitHub (chaque push redéploie) et propose un essai gratuit sans carte bancaire. Render a été écarté car sa base gratuite est PostgreSQL uniquement : il aurait fallu changer de SGBD, de pilote et réécrire la requête native (`TIMESTAMPDIFF` n'existe pas en PostgreSQL).
-- **MariaDB récente côté serveur** plutôt que MySQL : même SGBD qu'en local, donc même pilote (`mariadb-java-client`) et même dialecte Hibernate, et l'avertissement de version de MariaDB 10.4 disparaît (voir Limites connues).
+- **Render pour l'application et Aiven pour la base**, deux offres gratuites :
+  - Railway, qui héberge les deux ensemble, a été essayé en premier, mais son offre gratuite est limitée à une période d'essai déjà terminée sur notre compte.
+  - Vercel ne fait tourner que des fonctions courtes (Node, Python, Go) et ne lance ni Java ni Docker : une application Spring Boot avec une session de connexion n'y a pas sa place.
+  - Supabase et la base gratuite de Render sont en PostgreSQL : il aurait fallu changer de pilote, réécrire `db/create.sql` et la requête native (`TIMESTAMPDIFF` n'existe pas en PostgreSQL).
+  - Render lance directement le `Dockerfile` du dépôt et redéploie à chaque push sur `master` ; Aiven fournit gratuitement un MySQL 8 sans carte bancaire.
+- **MySQL 8 en production, MariaDB en local** : aucune offre gratuite ne propose MariaDB, et MySQL 8 accepte le même SQL pour tout ce que fait le projet (types, `CHECK` appliqués depuis 8.0.16, `NOW() - INTERVAL`, `TIMESTAMPDIFF`). `db/create.sql` passe sans modification ; Aiven exige une clé primaire sur chaque table, ce qui était déjà le cas. Le pilote reste `mariadb-java-client`, qui sait se connecter à MySQL : Hibernate reconnaît le serveur et choisit lui-même le dialecte MySQL. Pour ne pas le découvrir en production, la CI lance tous les tests sur les deux (voir TESTS).
+- **Connexion chiffrée et vérifiée** : Aiven refuse les connexions sans TLS. L'URL utilise `sslMode=verify-full` avec le certificat de l'autorité d'Aiven, copié dans l'image : la connexion est chiffrée et le pilote vérifie qu'il parle bien au serveur d'Aiven, pas à un intermédiaire. Ce certificat est public (il ne sert qu'à vérifier, pas à se connecter) et peut donc être versionné ; `sslMode=trust` aurait chiffré sans rien vérifier.
 - **`Dockerfile` en deux étapes** : une image Maven construit le jar, puis seule une image avec le JRE 21 le lance. L'image finale ne contient ni Maven, ni le code source, ni le dossier `.m2`. Le `pom.xml` est copié avant le code pour que Docker garde les dépendances en cache tant qu'il ne change pas. `.dockerignore` exclut `target/`, `.idea/`, `.git/` et le fichier de clé du client HTTP.
 - **Tests sautés dans l'image (`-DskipTests`)** : `DownlyzerApplicationTests` a besoin d'une base, qui n'existe pas pendant la construction. Ils sont lancés par le pipeline GitHub Actions, qui a une base (voir TESTS).
+- **`-XX:MaxRAMPercentage=75`** : l'offre gratuite de Render donne 512 Mo, et Java ne réserve par défaut qu'un quart de la mémoire du conteneur pour ses objets (128 Mo), trop juste pour Spring Boot et Hibernate. Les 25 % restants suffisent au reste de la JVM.
 - **`server.port=${PORT:8080}`** : l'hébergeur choisit le port et le donne dans la variable `PORT` ; en local, rien ne change.
-- **`server.forward-headers-strategy=framework`** : Railway reçoit les requêtes en HTTPS et les transmet à l'application en HTTP. Ce réglage fait lire à Spring les en-têtes `X-Forwarded-*` du proxy : l'en-tête `Location` d'un 201 et les redirections (après connexion par exemple) restent en `https://`.
-- **`TZ=Europe/Paris` dans l'image** : les serveurs sont en UTC. L'horloge de l'application (`Clock.systemDefaultZone()`) et le `NOW()` du script de données doivent être dans le même fuseau (voir Limites connues), d'où aussi le `--init-command` au chargement du script.
-- **Mêmes variables d'environnement qu'en local** (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `DOWNLYZER_API_KEY`), saisies dans l'onglet *Variables* de Railway : aucun secret dans le dépôt, et aucune ligne de code propre au déploiement. La clé d'API de production est différente de celle utilisée en local.
-- **Compte `downlyzer_app` aussi en production**, avec les mêmes droits (`SELECT`, `INSERT`, `UPDATE`, `DELETE`). Il est créé pour `'%'` et non `'localhost'`, car l'application tourne dans un autre conteneur que la base ; la base n'est joignable que par le réseau privé de Railway et par l'adresse publique protégée par mot de passe qui sert à charger le script.
+- **`server.forward-headers-strategy=framework`** : Render reçoit les requêtes en HTTPS et les transmet à l'application en HTTP. Ce réglage fait lire à Spring les en-têtes `X-Forwarded-*` du proxy : l'en-tête `Location` d'un 201 et les redirections (après connexion par exemple) restent en `https://`.
+- **`TZ=Europe/Paris` dans l'image** : les serveurs sont en UTC. L'horloge de l'application (`Clock.systemDefaultZone()`) et le `NOW()` du script de données doivent être dans le même fuseau (voir Limites connues), d'où aussi le `SET time_zone` au chargement du script.
+- **Mêmes variables d'environnement qu'en local** (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `DOWNLYZER_API_KEY`), saisies dans l'onglet *Environment* de Render : aucun secret dans le dépôt, et aucune ligne de code propre au déploiement. La clé d'API de production est différente de celle utilisée en local.
+- **Compte `downlyzer_app` aussi en production**, avec les mêmes droits (`SELECT`, `INSERT`, `UPDATE`, `DELETE`), plutôt que le compte administrateur `avnadmin` fourni par Aiven. Il est créé pour `'%'` et non `'localhost'`, car l'application et la base ne sont pas sur la même machine ; il est protégé par un mot de passe long et par le TLS obligatoire.
+- **Limite** : l'application s'endort après 15 minutes sans visite (premier chargement d'environ une minute), et Aiven peut éteindre une base gratuite restée longtemps inutilisée. Les deux suffisent pour une démonstration et la correction, pas pour une vraie exploitation.
 
 ### SOLID
 - **S — Responsabilité unique (appliqué)** :
