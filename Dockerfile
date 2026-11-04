@@ -11,6 +11,8 @@ RUN mvn -q -B package -DskipTests
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=construction /app/target/*.jar downlyzer.jar
+# certificat public d'aiven, pour que le pilote vérifie qu'il parle bien à leur serveur
+COPY db/aiven-ca.pem aiven-ca.pem
 # même fuseau que la base, sinon les seuils 48 h / 72 h sont décalés
 ENV TZ=Europe/Paris
 EXPOSE 8080
