@@ -5,6 +5,7 @@ import fr.efrei.downlyzer.exception.DonneeInvalideException;
 import fr.efrei.downlyzer.exception.RessourceIntrouvableException;
 import fr.efrei.downlyzer.exception.TransitionInterditeException;
 import fr.efrei.downlyzer.securite.UtilisateurConnecte;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -59,6 +60,15 @@ public class GestionnaireExceptionsWeb {
     public String modificationConcurrente(@AuthenticationPrincipal UtilisateurConnecte utilisateur, Model model) {
         return afficherErreur(model, utilisateur, "Modification concurrente",
                 "Ces informations viennent d'être modifiées par quelqu'un d'autre. Rechargez la page et recommencez.");
+    }
+
+    // Levée par une contrainte UNIQUE quand deux enregistrements simultanés passent les vérifications du service
+    // (par exemple deux évaluations du même incident, RG8)
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public String donneesDejaEnregistrees(@AuthenticationPrincipal UtilisateurConnecte utilisateur, Model model) {
+        return afficherErreur(model, utilisateur, "Modification concurrente",
+                "Ces informations viennent d'être enregistrées par quelqu'un d'autre. Rechargez la page.");
     }
 
     // Le modèle d'une page d'erreur part vide : l'utilisateur connecté y est remis pour l'en-tête (F1)

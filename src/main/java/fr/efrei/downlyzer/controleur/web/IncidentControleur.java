@@ -2,11 +2,14 @@ package fr.efrei.downlyzer.controleur.web;
 
 import fr.efrei.downlyzer.controleur.web.formulaire.AffectationFormulaire;
 import fr.efrei.downlyzer.controleur.web.formulaire.DescriptionIncidentFormulaire;
+import fr.efrei.downlyzer.controleur.web.formulaire.EvaluationFormulaire;
 import fr.efrei.downlyzer.controleur.web.formulaire.ResolutionFormulaire;
+import fr.efrei.downlyzer.modele.evaluation.Evaluation;
 import fr.efrei.downlyzer.modele.incident.Incident;
 import fr.efrei.downlyzer.modele.prestataire.Prestataire;
 import fr.efrei.downlyzer.securite.UtilisateurConnecte;
 import fr.efrei.downlyzer.service.EquipementService;
+import fr.efrei.downlyzer.service.EvaluationService;
 import fr.efrei.downlyzer.service.IncidentService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,10 +26,13 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class IncidentControleur {
     private final IncidentService incidentService;
     private final EquipementService equipementService;
+    private final EvaluationService evaluationService;
 
-    public IncidentControleur(IncidentService incidentService, EquipementService equipementService) {
+    public IncidentControleur(IncidentService incidentService, EquipementService equipementService,
+                              EvaluationService evaluationService) {
         this.incidentService = incidentService;
         this.equipementService = equipementService;
+        this.evaluationService = evaluationService;
     }
 
     @GetMapping("/equipements/{equipementId}/incidents/nouveau")
@@ -113,13 +119,30 @@ public class IncidentControleur {
         return "redirect:/incidents/" + id;
     }
 
-    // Partagé par l'affichage normal et par le réaffichage d'un formulaire F7-F8 invalide :
+    // F10 : route réservée au responsable par SecuriteConfiguration
+    @PostMapping("/incidents/{id}/evaluation")
+    public String evaluerIntervention(@PathVariable Long id,
+                                      @Valid @ModelAttribute("nouvelleEvaluation") EvaluationFormulaire nouvelleEvaluation,
+                                      BindingResult erreurs,
+                                      @AuthenticationPrincipal UtilisateurConnecte utilisateur,
+                                      Model model, RedirectAttributes redirection) {
+        if (erreurs.hasErrors()) {
+            return afficherDetail(id, utilisateur, model);
+        }
+        evaluationService.evaluerIntervention(id, nouvelleEvaluation.getNote(), nouvelleEvaluation.getCommentaire(),
+                utilisateur.getUsername());
+        redirection.addFlashAttribute("succes", "L'évaluation du prestataire est enregistrée.");
+        return "redirect:/incidents/" + id;
+    }
+
+    // Partagé par l'affichage normal et par le réaffichage d'un formulaire F7, F8 ou F10 invalide :
     // un formulaire déjà présent dans le modèle (avec ses erreurs) n'est pas remplacé
     private String afficherDetail(Long id, UtilisateurConnecte utilisateur, Model model) {
         Incident incident = incidentService.trouverIncident(id);
         model.addAttribute("incident", incident);
         model.addAttribute("dureeOuverture", incidentService.calculerDureeOuverture(incident));
-        model.addAttribute("evaluation", incidentService.trouverEvaluation(id).orElse(null));
+        Evaluation evaluation = evaluationService.trouverEvaluation(id).orElse(null);
+        model.addAttribute("evaluation", evaluation);
         model.addAttribute("descriptionModifiable",
                 incidentService.peutModifierDescription(incident, utilisateur.getProfil()));
         boolean affectationEtResolutionPossibles =
@@ -127,12 +150,19 @@ public class IncidentControleur {
         model.addAttribute("affectationEtResolutionPossibles", affectationEtResolutionPossibles);
         if (affectationEtResolutionPossibles) {
             model.addAttribute("prestataires", incidentService.listerPrestatairesAffectables(incident));
+            model.addAttribute("notesPrestataires", evaluationService.calculerNotesMoyennesParPrestataire());
             if (!model.containsAttribute("affectation")) {
                 model.addAttribute("affectation", new AffectationFormulaire());
             }
             if (!model.containsAttribute("resolution")) {
                 model.addAttribute("resolution", new ResolutionFormulaire());
             }
+        }
+        boolean evaluationPossible =
+                evaluationService.peutEvaluer(incident, evaluation != null, utilisateur.getProfil());
+        model.addAttribute("evaluationPossible", evaluationPossible);
+        if (evaluationPossible && !model.containsAttribute("nouvelleEvaluation")) {
+            model.addAttribute("nouvelleEvaluation", new EvaluationFormulaire());
         }
         return "incidents/detail";
     }

@@ -78,7 +78,7 @@ Les mots de passe sont stockés hachés en BCrypt dans la base.
 ### Limites connues
 - Le script de données utilise `NOW()` de MariaDB et l'application l'heure de la JVM : les deux doivent être dans le **même fuseau horaire**, sinon les seuils sont décalés (un incident de 47 h pourrait apparaître orange).
 - MariaDB 10.4 (fournie par XAMPP) n'est plus officiellement prise en charge par Hibernate 7, qui affiche un avertissement au démarrage (minimum 10.6). L'application fonctionne, mais le serveur de déploiement doit utiliser une version récente.
-- Bootstrap est chargé depuis un CDN : sans accès à Internet, les pages fonctionnent mais s'affichent sans mise en forme.
+- Bootstrap, Leaflet et le fond de carte OpenStreetMap sont chargés depuis Internet : sans connexion, les pages fonctionnent mais s'affichent sans mise en forme, et l'onglet Carte reste vide (l'onglet Liste donne les mêmes informations).
 - L'état « Dégradé » d'un équipement n'est jamais attribué automatiquement (voir CHOIX TECHNIQUES, F7-F8) : il n'existe que dans les données de démonstration.
 - Les équipements d'une station (F2) ne sont pas triés : la base les renvoie dans l'ordre de son choix.
 - *À compléter au fil du projet.*
@@ -110,7 +110,7 @@ Organisation des packages (`fr.efrei.downlyzer`) :
 | `modele` | énumérations communes (`StatutIncident`, `EtatEquipement`, `Profil`, `SourceIncident`, `NiveauAttention`) |
 | `modele.<entité>` (`station`, `equipement`, `incident`…) | une entité JPA et son repository Spring Data |
 | `exception` | exceptions métier (`ExceptionMetier` et ses sous-classes) |
-| `service` | règles de gestion (`IncidentService`, `StationService`, `EquipementService`) |
+| `service` | règles de gestion (`IncidentService`, `EvaluationService`, `StationService`, `EquipementService`) |
 | `securite` | configuration Spring Security et chargement de l'utilisateur connecté |
 | `configuration` | beans techniques (l'horloge `Clock`) |
 | `controleur.web` | pages Thymeleaf, gestionnaire d'erreurs des pages, contrôleur d'erreur |
@@ -134,7 +134,8 @@ Organisation des packages (`fr.efrei.downlyzer`) :
 |---|---|---|
 | `GET /connexion` | F1 : connexion (le `POST` est traité par Spring Security) | tous |
 | `GET /` | redirige vers `/stations` | connecté |
-| `GET /stations` | liste des stations, triée par nom | connecté |
+| `GET /stations` | liste des stations, triée par nom (onglet « Liste ») ; le niveau d'attention n'est affiché qu'au responsable | connecté |
+| `GET /stations?vue=carte` | piste 4 : carte des stations et de leur situation (onglet « Carte ») | responsable |
 | `GET /stations/{id}` | F2 : équipements de la station | connecté |
 | `GET /equipements/{id}` | F3 : fiche de l'équipement et ses incidents | connecté |
 | `GET /equipements/{id}/incidents/nouveau`, `POST /equipements/{id}/incidents` | F4 : déclarer un incident sur cet équipement | connecté |
@@ -142,6 +143,8 @@ Organisation des packages (`fr.efrei.downlyzer`) :
 | `GET`, `POST /incidents/{id}/description` | F6 : modifier la description | selon l'état de l'incident (voir droits) |
 | `POST /incidents/{id}/affectation` | F7 : affecter ou réaffecter un prestataire | responsable |
 | `POST /incidents/{id}/resolution` | F8 : déclarer l'incident résolu | responsable |
+| `GET /historique` | F9 : historique des incidents résolus | connecté (lecture seule) |
+| `POST /incidents/{id}/evaluation` | F10 : évaluer l'intervention du prestataire | responsable |
 | `POST /deconnexion` | F1 : déconnexion | connecté |
 
 La déclaration d'un incident est rangée sous l'équipement (`/equipements/{id}/incidents`) parce qu'un incident se déclare toujours depuis un équipement donné (F4) ; une fois créé, l'incident a sa propre adresse (`/incidents/{id}`), indépendante de l'équipement.
@@ -269,19 +272,26 @@ Ces contraintes ne remplacent pas les contrôles de la couche service : elles é
 - **Noms des tests** : chaque méthode est nommée comme une phrase qui décrit le comportement attendu (`unAgentNePeutPlusModifierLaDescriptionDUnIncidentAffecte`), conformément à la fiche *Nommage* : un test qui échoue dit directement quelle règle est cassée.
 - Commande : `mvn verify` (voir README pour `DownlyzerApplicationTests`, qui a besoin de la base).
 - Couvert :
-  - service (`IncidentServiceTest`, 17 tests) :
+  - service des incidents (`IncidentServiceTest`, 18 tests) :
     - F4 : un incident déclaré démarre non affecté, à l'heure de l'horloge, et l'équipement passe hors service ;
     - F5-F6 : droits de modification de la description (agent ou responsable, incident non affecté, affecté ou résolu), incident inexistant, durée d'ouverture (incident en cours ou résolu) ;
     - F7 : affectation d'un prestataire spécialisé, réaffectation (l'ancien prestataire n'est plus proposé), refus d'un prestataire non proposé, refus d'affecter un incident résolu (RG5), seul le responsable peut affecter et résoudre ;
-    - F8 : date de résolution et commentaire enregistrés, équipement remis en service s'il n'a plus d'incident en cours, ou laissé hors service sinon, commentaire vide enregistré comme absent, refus de résoudre deux fois.
-  - pages (`IncidentControleurTest`, 19 tests) :
+    - F8 : date de résolution et commentaire enregistrés, équipement remis en service s'il n'a plus d'incident en cours, ou laissé hors service sinon, commentaire vide enregistré comme absent, refus de résoudre deux fois ;
+    - F9 : l'historique demande les incidents résolus triés par date de résolution décroissante.
+  - politique d'urgence (`PolitiqueUrgenceTest`, 5 tests) : exactement les cas du §7.8 — 2 h, 47 h et 47 h 59 min 59 s vert ; 48 h pile et 71 h 59 min 59 s orange ; 72 h pile et 5 jours rouge ; un incident affecté depuis 1 h ou ouvert depuis 80 h est « pris en charge » (RG4) ; un incident résolu n'a pas de niveau (RG6). Les tests construisent la vraie classe avec `new`, sans Spring ni simulation : elle ne dépend de rien d'autre que de l'incident et de l'heure.
+  - situation des stations (`StationServiceTest`, 4 tests) : une station prend le niveau de son incident le plus urgent, un incident en attente passe avant un incident pris en charge, une station dont tous les incidents sont affectés est « prise en charge », une station sans incident n'a pas de niveau.
+  - service des évaluations (`EvaluationServiceTest`, 8 tests) : évaluation enregistrée avec l'auteur connecté et la date de l'horloge, refus pour un incident non résolu ou résolu sans prestataire, une seule évaluation par incident, note de 1 à 5 (0 et 6 refusés, 1 et 5 acceptés), commentaire vide enregistré comme absent, seul le responsable peut évaluer, notes moyennes indexées par prestataire (RG8, F10).
+  - pages (`IncidentControleurTest`, 25 tests) :
     - accès refusé sans connexion, détail d'un incident (F5) avec ou sans lien de modification, enregistrement d'une description valide, formulaire réaffiché si la description est trop courte, refus d'un envoi sans jeton CSRF ;
     - F7-F8 : formulaires visibles pour le responsable et absents pour l'agent, affectation et résolution qui ramènent au détail avec un message, affectation sans prestataire réaffichée avec l'erreur, prestataire non proposé (400), agent qui tente d'affecter ou de résoudre (403) ;
+    - F9-F10 : historique affiché avec ses incidents et le badge « À évaluer », formulaire d'évaluation visible pour le responsable, évaluation enregistrée avec un message, note invalide réaffichée avec l'erreur, agent qui tente d'évaluer (403), seconde évaluation (409) ;
+    - stations (`StationControleurTest`, 5 tests) : le responsable voit la situation de chaque station et l'onglet Carte ; l'agent voit les stations et leur nombre d'incidents, sans niveau d'attention ni onglet Carte ; l'onglet carte charge Leaflet et transmet la position et le niveau de chaque station ; un agent qui demande la carte reçoit un 403 ; une valeur d'onglet inconnue affiche la liste ;
     - pages d'erreur : 404 (incident inexistant, identifiant non numérique, URL inconnue), 403, 409, et erreur imprévue affichée sans détail technique.
 - Non couvert :
-  - les pages et services des stations et des équipements (F2-F3) : ils ne contiennent pas de règle, seulement des lectures ;
+  - la fiche équipement et les équipements d'une station (F2-F3) : ce sont de simples lectures, sans règle ;
+  - le JavaScript de la carte (placement des points, couleurs, bulles) : vérifié à la main dans le navigateur ;
   - la connexion réelle (`UtilisateurDetailsService` et le contrôle du mot de passe BCrypt) : vérifiée à la main avec les deux comptes de test ;
-  - les repositories et les requêtes JPQL : aucun test n'utilise une vraie base (`@DataJpaTest` demanderait une base de test) ;
+  - les repositories et les requêtes JPQL : aucun test n'utilise une vraie base (`@DataJpaTest` demanderait une base de test). En particulier, l'ordre de l'historique (RG7) n'est vérifié que par le choix de la requête (`findByStatutOrderByDateResolutionDesc`), et la moyenne des notes (`AVG`) n'est vérifiée qu'à la main dans l'application ;
   - l'atomicité réelle des opérations `@Transactional` (RG10) : les tests unitaires utilisent des simulations, ils vérifient les règles mais pas l'annulation en base en cas d'erreur.
 
 ---
@@ -296,6 +306,7 @@ Deux profils :
 
 | N° | Fonctionnalité | Responsable d'exploitation | Agent de station |
 |---|---|---|---|
+| — | Liste des stations | Accès complet, avec le niveau d'attention de chaque station | Lecture seule : nombre d'incidents en cours, sans niveau d'attention |
 | F2–F3 | Consulter équipements et fiches | Accès complet | Accès complet |
 | F4 | Déclarer un incident | Accès complet | Accès complet |
 | F5–F6 | Consulter / modifier un incident | Accès complet | Consultation ; modification de la description tant que l'incident n'est pas affecté |
@@ -304,10 +315,14 @@ Deux profils :
 | F9 | Consulter l'historique | Accès complet | Lecture seule |
 | F10 | Évaluer un prestataire | Accès complet | Interdit |
 | F11 | Tableau de bord | Accès complet | Interdit |
-| Alpha 2 et 4 | Page de supervision (graphiques, carte) | Accès complet | Interdit |
+| Alpha 2 | Graphiques de supervision | Accès complet | Interdit |
+| Alpha 4 | Carte des stations (onglet de la page Stations) | Accès complet | Interdit |
 
 Justification :
 - La résolution est réservée au responsable, car c'est elle qui ouvre l'évaluation du prestataire (RG8) : elle revient à celui qui gère les prestataires.
+- **Les niveaux d'attention (vert, orange, rouge, pris en charge) sont réservés au responsable**, sur la liste des stations comme sur la carte et le tableau de bord. Ils mesurent depuis combien de temps un incident attend un prestataire : c'est un outil de pilotage, et seul le responsable peut agir dessus en affectant un prestataire. Les montrer à l'agent sur la page Stations lui aurait donné, par une autre porte, l'information du tableau de bord qui lui est interdit (F11).
+- **L'agent voit en revanche le nombre d'incidents en cours de chaque station** : en arrivant dans une station, il sait si des pannes y sont déjà signalées, ce qui évite les déclarations en double. Nous avions d'abord ouvert la carte et les niveaux aux deux profils ; nous sommes revenus sur ce choix pour garder le tableau des droits cohérent.
+- La règle « peut superviser » est écrite une seule fois, dans `Profil.peutSuperviser()`, et utilisée par la page Stations (affichage de la colonne et de l'onglet) ; la route de la carte est en plus bloquée par Spring Security.
 - L'agent peut préciser sa description tant que personne n'a pris l'incident en charge ; ensuite, le prestataire travaille sur une description stable.
 - **F6 : seule la description est modifiable** (par le responsable jusqu'à la résolution, par l'agent tant que l'incident n'est pas affecté). Les autres informations ont chacune une raison de ne pas l'être :
   - le statut, le prestataire et les dates d'affectation et de résolution changent uniquement par F7 et F8, qui garantissent RG2 et RG5 : les modifier librement permettrait de contourner ces règles ;
@@ -320,7 +335,7 @@ Justification :
 - Les systèmes externes (capteurs) ne sont pas un profil de l'application : ils accèdent uniquement à `/api/**`, avec une clé d'API.
 - Nous n'avons pas créé de profil « administrateur » chargé de créer les comptes : le sujet impose deux profils, et aucune fonctionnalité ne demande de gérer les utilisateurs ; les comptes sont créés par le script SQL.
 - Toutes les restrictions sont appliquées côté serveur (RG11), à deux niveaux :
-  - **par Spring Security pour les routes réservées à un profil** (`POST /incidents/*/affectation` et `/incidents/*/resolution` exigent le rôle `RESPONSABLE`) : un agent qui forge la requête reçoit un 403 avant même d'atteindre le contrôleur ;
+  - **par Spring Security pour les routes réservées à un profil** (`POST /incidents/*/affectation`, `/incidents/*/resolution` et `/incidents/*/evaluation`, ainsi que `/stations?vue=carte`, exigent le rôle `RESPONSABLE`) : un agent qui forge la requête reçoit un 403 avant même d'atteindre le contrôleur ;
   - **dans la couche service pour les règles qui dépendent de l'état de l'incident** (un agent ne modifie plus un incident affecté) : Spring Security ne connaît que l'URL, pas l'incident.
 
 ### Deux types de contrôleurs
@@ -394,6 +409,36 @@ Les transitions d'état passent par des requêtes POST vers des URL d'action (`/
   - Sans cela, la fiche d'un équipement pouvait afficher « En service » avec une panne ouverte. Limite : l'application ne sait pas qu'une panne est seulement partielle ; l'état « dégradé » n'est jamais attribué automatiquement.
 - **Pas de table d'historique des affectations** : la réaffectation remplace le prestataire de l'incident. Une table `affectation` (prestataire, date de début, date de fin) garderait la trace des réaffectations, mais aucune fonctionnalité du socle ne l'utilise.
 
+### Historique et évaluation (F9, F10)
+- **L'historique est une page à part** (`/historique`), accessible depuis l'en-tête, plutôt qu'un filtre sur une autre liste : c'est une consultation fréquente, commune aux deux profils. Il est trié par date de résolution décroissante (RG7) par une requête dérivée (`findByStatutOrderByDateResolutionDesc`) : le tri est fait par la base, pas en Java.
+- **Colonnes de l'historique** : date de résolution, incident (lien vers son détail), équipement (lien vers sa fiche), station, prestataire et note. Un incident évaluable mais pas encore évalué porte un badge « À évaluer », pour que le responsable retrouve vite ce qui reste à faire ; un incident résolu sans prestataire affiche « — ».
+- **Pas de filtre ni de pagination** dans l'historique : le sujet ne les demande pas, et le volume de données reste faible. Ce sera à revoir si l'historique grossit.
+- **Les évaluations de l'historique sont chargées en une seule requête** (`findAll`, rangées dans une `Map` par numéro d'incident), plutôt qu'une requête par ligne du tableau.
+- **Le formulaire d'évaluation est sur la page de détail de l'incident**, dans la carte « Évaluation du prestataire », comme l'affectation et la résolution : le responsable voit ce qu'il évalue (description, prestataire, durée, commentaire de résolution). Il n'apparaît qu'au responsable, pour un incident résolu par un prestataire et pas encore évalué (`EvaluationService.peutEvaluer`).
+- **La note se choisit en cliquant sur des étoiles** (1 à 5), le geste habituel pour noter un service, plutôt qu'une liste déroulante ou un champ libre : les cinq valeurs sont visibles d'un coup d'œil, et aucune autre valeur ne peut être saisie depuis la page. Ce sont de vrais boutons radio dessinés en étoiles, uniquement en CSS (sans JavaScript) : le formulaire reste utilisable au clavier, et chaque étoile porte un texte caché « 3 sur 5 » pour les lecteurs d'écran. Les boutons sont écrits de 5 à 1 et affichés à l'envers, pour que la règle CSS « bouton coché ~ étoiles suivantes » colore l'étoile choisie et toutes celles à sa gauche.
+- **Une note enregistrée est affichée en étoiles pleines et vides** (fragment `etoiles` de `fragments/affichage.html`, utilisé sur le détail d'un incident et dans l'historique), avec sa valeur en texte au survol et pour les lecteurs d'écran. Dans la liste de choix d'un prestataire, une balise `<option>` ne peut contenir que du texte : la moyenne y est écrite « ★ 4,0 / 5 ».
+- **La note est vérifiée trois fois** : par le formulaire (`@NotNull`, `@Min(1)`, `@Max(5)`) pour réafficher un message sous le champ, par `EvaluationService` (constantes `NOTE_MINIMALE` et `NOTE_MAXIMALE`) parce que RG8 est une règle métier qui doit valoir quelle que soit la porte d'entrée (pages, future API), et par la contrainte `CHECK` de la base en dernier recours.
+- **Le commentaire est facultatif** (au plus 1 000 caractères, comme la colonne) et un commentaire vide est enregistré comme absent, comme pour la résolution.
+- **L'auteur est le responsable connecté et la date est celle de l'horloge** : ni l'un ni l'autre ne sont saisis.
+- **Une évaluation n'est plus modifiable** une fois enregistrée : RG8 n'en autorise qu'une par incident, et la modifier changerait après coup la note moyenne déjà consultée pour choisir des prestataires.
+- **Où consulter la note d'un prestataire** (F10) : sur le détail de chaque incident évalué, dans l'historique, et surtout **dans la liste de choix du prestataire au moment d'affecter un incident** (« Ascenso Maintenance — 4,0 / 5 (2 évaluation(s)) ») : c'est là que la note sert à décider. Un prestataire jamais évalué est indiqué « pas encore noté ».
+- **La note moyenne est calculée par la base** (requête JPQL avec `AVG` et `GROUP BY`), jamais stockée : elle est toujours à jour. La requête construit directement un `record` `NoteMoyennePrestataire` (`SELECT new ...`) plutôt qu'un tableau d'objets, pour que le code qui l'utilise reste lisible et typé.
+
+### Situation des stations et carte (RG3-RG4, piste 4)
+- **`PolitiqueUrgence` est le seul endroit où vivent les seuils** (`SEUIL_ORANGE` = 48 h, `SEUIL_ROUGE` = 72 h, constantes nommées, §7.3). Elle reçoit l'incident et l'heure et rend un `NiveauAttention` (`ROUGE`, `ORANGE`, `VERT`, `PRIS_EN_CHARGE`) : le niveau est toujours calculé, jamais enregistré. Elle est annotée `@Component` plutôt que `@Service` : ce n'est pas un cas d'usage appelé par un contrôleur, mais une règle utilisée par les services (la carte aujourd'hui, le tableau de bord F11 ensuite).
+- **La comparaison se fait sur une `Duration`**, pas sur un nombre d'heures arrondi : 47 h 59 min 59 s reste vert, 48 h pile devient orange, exactement comme l'énonce RG3.
+- **Un incident résolu lève une `IllegalArgumentException`** plutôt qu'une exception métier : il n'apparaît jamais parmi les incidents en cours (RG6), donc demander son niveau est une erreur de programmation, pas une situation que l'utilisateur peut provoquer.
+- **Une station prend le niveau de son incident en cours le plus urgent.** L'ordre d'urgence est l'ordre de déclaration de `NiveauAttention` (rouge, orange, vert, puis pris en charge) : un incident encore en attente d'affectation, même vert, demande une action, alors qu'un incident pris en charge est déjà traité. Une station sans incident en cours est affichée « Aucun incident ».
+- **Les incidents en cours sont lus en une seule requête** (`findByStatutNot(RESOLU)`) puis regroupés par station en Java, plutôt qu'une requête par station.
+- **La route de la carte est protégée par une règle Spring Security sur le paramètre `vue`** (`requestMatchers` avec une condition sur la requête), et non par un test dans le contrôleur : toutes les restrictions de route par profil restent au même endroit, dans `SecuriteConfiguration`.
+- **`SituationStation` est un `record`** (identifiant, nom, code, coordonnées, niveau, nombre d'incidents en cours) et non l'entité `Station` : c'est exactement ce que la liste et la carte affichent, sans relation JPA.
+- **Liste et carte sont deux onglets de la même page** (`/stations` et `/stations?vue=carte`) plutôt que deux pages : ce sont deux façons de regarder les mêmes stations. L'agent, qui n'a pas accès à la carte, ne voit pas d'onglets, seulement la liste. L'onglet est choisi par un paramètre d'URL plutôt qu'en JavaScript : chaque onglet a son adresse (on peut la mettre en favori ou la partager), le bouton « précédent » du navigateur fonctionne, le JavaScript de Bootstrap n'est pas nécessaire, et la carte n'est créée que lorsque son onglet est affiché (Leaflet calcule mal sa taille dans un onglet masqué). Une valeur inconnue affiche la liste.
+- **Leaflet 1.9.4 avec le fond de carte OpenStreetMap**, chargés depuis un CDN : bibliothèque libre, légère, sans clé d'API ni compte à créer. L'attribution d'OpenStreetMap, exigée par sa licence, est affichée sur la carte. Limite : comme Bootstrap, la carte a besoin d'un accès à Internet.
+- **Le JavaScript lit les stations dans la liste HTML affichée sous la carte** (attributs `data-latitude`, `data-niveau`…), qui sert aussi de légende et de version texte de la carte. Le même contenu sert donc à l'affichage et à la carte, et on ne dépend pas de la conversion d'objets Java en JavaScript par Thymeleaf. Le contenu des bulles est construit élément par élément (`textContent`) : le nom d'une station n'est jamais interprété comme du HTML.
+- **Un point de couleur par station** (`circleMarker`) plutôt qu'une épingle : la couleur est l'information principale. Survoler un point affiche le nom de la station ; cliquer ouvre une bulle avec sa situation, son nombre d'incidents en cours et un lien vers ses équipements (F2), d'où l'on rejoint la fiche d'un équipement puis le détail d'un incident.
+- **Les couleurs des niveaux sont définies une seule fois**, en variables CSS dans `style.css` (`--niveau-ROUGE`…) : les badges les utilisent, et le JavaScript de la carte les lit avec `getComputedStyle`. Changer une couleur ne demande de toucher qu'une ligne.
+- **Les libellés des niveaux rappellent leur seuil** (« Rouge — 72 h et plus »), pour que l'utilisateur comprenne la couleur sans consulter de légende.
+
 ### Exceptions
 - Exceptions métier personnalisées, non vérifiées (`RuntimeException`, qui n'obligent pas chaque méthode à les déclarer), héritant d'une classe mère abstraite `ExceptionMetier` (fiche *Gestion des exceptions*), avec des messages en français qui indiquent l'objet concerné et la raison :
   - `RessourceIntrouvableException` (abstraite) et ses filles `StationIntrouvableException`, `EquipementIntrouvableException`, `IncidentIntrouvableException`, `PrestataireIntrouvableException`, `UtilisateurIntrouvableException` ;
@@ -405,6 +450,7 @@ Les transitions d'état passent par des requêtes POST vers des URL d'action (`/
   - Gérer les classes mères (`RessourceIntrouvableException`) évite d'écrire un gestionnaire par entité : une nouvelle exception « introuvable » est prise en charge sans rien ajouter.
   - Un identifiant non numérique dans l'URL (`/incidents/abc`) est traité comme une ressource introuvable (**404**) plutôt que comme une requête invalide (400) : pour l'utilisateur, cette page n'existe pas.
   - Une modification concurrente (`ObjectOptimisticLockingFailureException`, levée par `@Version`) donne un **409** avec un message qui invite à recharger la page, plutôt qu'une erreur technique.
+  - Une contrainte `UNIQUE` violée (`DataIntegrityViolationException`, par exemple deux responsables qui évaluent le même incident au même instant, après que le service a vérifié des deux côtés qu'il n'y avait pas encore d'évaluation) donne aussi un **409**, au lieu d'une erreur 500.
   - `ResponseEntity` n'est pas utilisé côté pages : une page renvoie le nom d'une vue, et le code HTTP est fixé par `@ResponseStatus` sur le gestionnaire. Il sera utilisé dans l'API, uniquement pour le 201 qui doit porter l'en-tête `Location`.
 - Les erreurs qui n'atteignent jamais un de nos contrôleurs (URL inconnue, accès refusé par Spring Security, exception imprévue) sont reprises par `ErreurControleur`, qui remplace la page « Whitelabel » de Spring Boot et affiche la même page `erreur.html`, avec un message générique en français : le détail technique d'une exception n'est jamais montré à l'utilisateur. Il est placé dans `controleur.web` pour que l'en-tête affiche toujours l'utilisateur connecté.
   - Limite : ce contrôleur répond toujours en HTML. Une URL inconnue sous `/api` recevra donc une page HTML ; à revoir avec l'API.
@@ -416,7 +462,7 @@ Les transitions d'état passent par des requêtes POST vers des URL d'action (`/
 - `static/css/style.css` ne contient que ce qui est propre à Downlyzer, notamment la couleur des badges d'état et de statut. La classe d'un badge reprend le nom de la constante stockée en base (`etat-HORS_SERVICE`, `statut-NON_AFFECTE`…) : la couleur est donc choisie par la feuille de style, sans condition dans les templates.
 - Les erreurs de saisie sont affichées sous le champ concerné, qui est entouré en rouge (`th:errorclass="is-invalid"`).
 - **Templates rangés par dossier** (`stations/`, `equipements/`, `incidents/`, `fragments/`) : le nom renvoyé par un contrôleur (`"incidents/detail"`) dit où chercher la vue, et plusieurs pages de détail peuvent coexister sans conflit de nom.
-- **Navigation par liens** : stations → équipements d'une station → fiche équipement → détail d'un incident, avec un lien de retour en haut de chaque page.
+- **Navigation par liens** : stations → équipements d'une station → fiche équipement → détail d'un incident, avec un lien de retour en haut de chaque page. La barre d'en-tête contient deux liens permanents, « Stations » et « Historique », les deux points d'entrée communs aux deux profils.
 - La liste des stations affiche le code et le nom, triée par nom (`findAllByOrderByNomAsc`).
 
 ### Organisation du projet
@@ -428,7 +474,12 @@ Les transitions d'état passent par des requêtes POST vers des URL d'action (`/
 - `target/` et `.idea/` sont ignorés par Git : ils sont produits par Maven et par l'IDE, et `.idea/` peut contenir les variables d'environnement (donc le mot de passe de la base).
 
 ### SOLID
-*À compléter* (principe(s) appliqué(s) : où, pourquoi ; principes écartés : pourquoi).
+- **S — Responsabilité unique (appliqué)** :
+  - **`EvaluationService` est séparé d'`IncidentService`** : l'évaluation des prestataires (RG8, notes moyennes) a ses propres règles, ses propres données et changerait pour d'autres raisons (barème, notation par critère) que le cycle de vie d'un incident. Concrètement, `IncidentService` n'a plus besoin du repository des évaluations, et chaque classe de test ne prépare que ce dont son service a besoin.
+  - **`Incident` protège son propre état** (`affecter()`, `resoudre()`, `modifierDescription()`), tandis que les services orchestrent un cas d'usage (charger, vérifier les droits, enregistrer) et que les contrôleurs ne font que traduire HTTP en appels de service : chaque couche a une seule raison de changer.
+  - **`PolitiqueUrgence` ne fait qu'une chose** : dire quel est le niveau d'attention d'un incident. Changer un seuil (72 h → 96 h) ne touche que cette classe ; la carte et le futur tableau de bord en profitent sans modification.
+  - **Les contrôleurs sont découpés par écran** (`StationControleur`, `EquipementControleur`, `IncidentControleur`, `HistoriqueControleur`), et la traduction des exceptions en pages d'erreur est isolée dans `GestionnaireExceptionsWeb`.
+- *Autres principes : à compléter.*
 
 ### Requête SQL native
 *À compléter* (où, analyse critique).
@@ -438,6 +489,7 @@ Les transitions d'état passent par des requêtes POST vers des URL d'action (`/
 - **`IncidentService.modifierDescription` (F6)** : l'incident est chargé, vérifié puis modifié dans une seule transaction. Hibernate enregistre la modification de lui-même à la fin de la transaction, sans appel à `save()`. Le verrouillage optimiste (`@Version`) est vérifié au même moment : si quelqu'un a modifié l'incident entre son chargement et l'enregistrement, l'enregistrement est refusé (409) au lieu d'écraser son travail. Le formulaire ne transporte pas la version : une modification faite pendant que l'utilisateur remplit le formulaire n'est donc pas détectée.
 - **`IncidentService.affecterPrestataire` (F7)** : la vérification (le prestataire fait partie de la liste proposée, l'incident n'est pas résolu) et la modification se font dans la même transaction, avec le même verrouillage optimiste : deux responsables qui affectent le même incident en même temps ne peuvent pas s'écraser sans le savoir.
 - **`IncidentService.resoudreIncident` (F8)** : l'incident passe résolu et, s'il n'a plus d'autre incident en cours, l'équipement repasse en service. Deux tables modifiées, donc une seule transaction (RG10).
+- **`EvaluationService.evaluerIntervention` (F10) n'est pas annoté** : il n'écrit qu'une seule ligne (l'évaluation), et `save()` s'exécute déjà dans sa propre transaction. Le risque de deux évaluations simultanées du même incident n'est pas réglé par une transaction (les deux vérifications passeraient quand même), mais par la contrainte `UNIQUE (incident_id)`, traduite en 409.
 - Les méthodes de lecture (`trouverIncident`, `listerStations`…) ne sont pas annotées : chaque appel au repository s'exécute déjà dans sa propre transaction en lecture, et il n'y a rien à rendre atomique.
 - L'annotation utilisée est celle de Spring (`org.springframework.transaction.annotation.Transactional`), gérée nativement par Spring, et non celle de Jakarta.
 
@@ -471,10 +523,13 @@ Ces pistes ont été choisies parce qu'elles se renforcent : les incidents envoy
 ### Réalisation supplémentaire : cartographie du réseau (piste 4)
 - **Besoin** : voir d'un coup d'œil où se trouvent les problèmes sur le réseau.
 - **Périmètre envisagé** : carte des stations (Leaflet + OpenStreetMap) ; la couleur de chaque station est calculée par le service à partir de ses incidents actifs, avec la même logique que RG3 ; un clic sur une station mène à ses équipements (F2).
-- Choix et essais : *à compléter*
-- Ce qui fonctionne : *à compléter*
-- Difficultés : *à compléter*
-- Reste à faire : *à compléter*
+- **Choix et essais** :
+  - la carte devait être une page de supervision à part ; elle est finalement devenue un onglet « Carte » de la page Stations, à côté de l'onglet « Liste ». Nous l'avions d'abord ouverte aux deux profils, puis réservée au responsable, comme les niveaux d'attention qu'elle affiche (voir CHOIX TECHNIQUES, Profils et droits) ;
+  - les deux onglets affichent les mêmes données (`SituationStation`), calculées une seule fois par `StationService` avec `PolitiqueUrgence` : la logique de couleur n'existe qu'en Java, le JavaScript ne fait que placer les points ;
+  - pour transmettre les stations au JavaScript, nous avons écarté l'insertion directe d'objets Java par Thymeleaf (`th:inline="javascript"`), dont le résultat dépend de la bibliothèque de conversion JSON présente, au profit des attributs `data-*` de la liste affichée, qui sert en même temps de légende.
+- **Ce qui fonctionne** : les 6 stations sont placées et colorées selon leur incident le plus urgent ; la bulle de chaque station donne sa situation, son nombre d'incidents en cours et un lien vers ses équipements ; la carte se cadre automatiquement sur l'ensemble des stations ; l'onglet Liste affiche les mêmes informations sous forme de tableau.
+- **Difficultés** : Leaflet ne peut pas calculer la taille d'une carte cachée dans un onglet inactif ; c'est une des raisons pour lesquelles l'onglet est choisi par l'URL et la carte créée seulement quand elle est affichée.
+- **Reste à faire** : la carte ne se met pas à jour toute seule (il faut recharger la page) ; filtrer les stations affichées par niveau serait utile avec un réseau plus grand.
 
 ---
 

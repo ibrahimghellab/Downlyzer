@@ -5,30 +5,103 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Stations — Downlyzer</title>
     <th:block th:replace="~{fragments/entete :: styles}"></th:block>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" th:if="${vueCarte}">
 </head>
 <body>
 <header th:replace="~{fragments/entete :: entete}"></header>
 <main class="container pb-4">
     <h1 class="h2 mb-3">Stations du réseau</h1>
 
-    <div class="card shadow-sm">
+    <ul class="nav nav-tabs" th:if="${supervision}">
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${!vueCarte} ? 'active'" th:attr="aria-current=${!vueCarte} ? 'page'"
+               th:href="@{/stations}">Liste</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${vueCarte} ? 'active'" th:attr="aria-current=${vueCarte} ? 'page'"
+               th:href="@{/stations(vue='carte')}">Carte</a>
+        </li>
+    </ul>
+
+    <div class="card shadow-sm" th:classappend="${supervision} ? 'border-top-0 rounded-top-0'" th:unless="${vueCarte}">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead>
                 <tr>
                     <th>Code</th>
                     <th>Station</th>
+                    <th th:if="${supervision}">Situation</th>
+                    <th class="text-end">Incidents en cours</th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="station : ${stations}">
-                    <td class="text-body-secondary" th:text="${station.code}">GCE</td>
-                    <td><a th:href="@{/stations/{id}(id=${station.id})}" th:text="${station.nom}">Gare Centrale</a></td>
+                <tr th:each="situation : ${situations}">
+                    <td class="text-body-secondary" th:text="${situation.code}">GCE</td>
+                    <td><a th:href="@{/stations/{id}(id=${situation.id})}" th:text="${situation.nom}">Gare Centrale</a></td>
+                    <td th:if="${supervision}" th:insert="~{fragments/affichage :: badgeSituation(${situation.niveau})}"></td>
+                    <td class="text-end" th:text="${situation.incidentsEnCours}">2</td>
                 </tr>
                 </tbody>
             </table>
         </div>
     </div>
+
+    <th:block th:if="${vueCarte}">
+        <div class="card shadow-sm border-top-0 rounded-top-0">
+            <div id="carte" class="carte-reseau" role="region" aria-label="Carte des stations du réseau"></div>
+            <div class="card-body">
+                <!-- La carte place ses points à partir de cette liste, qui sert aussi de légende et de version texte -->
+                <ul class="list-inline mb-0" id="stations-carte">
+                    <li class="list-inline-item mb-2" th:each="situation : ${situations}"
+                        th:attr="data-id=${situation.id}, data-nom=${situation.nom}, data-latitude=${situation.latitude},
+                                 data-longitude=${situation.longitude}, data-niveau=${situation.niveau} ?: 'AUCUN',
+                                 data-incidents=${situation.incidentsEnCours}">
+                        <a th:href="@{/stations/{id}(id=${situation.id})}" th:text="${situation.nom}">Gare Centrale</a>
+                        <th:block th:insert="~{fragments/affichage :: badgeSituation(${situation.niveau})}"></th:block>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <p class="small text-body-secondary mt-2">Chaque station prend la couleur de son incident en cours le plus urgent.
+            Fond de carte © contributeurs OpenStreetMap.</p>
+    </th:block>
 </main>
+
+<th:block th:if="${vueCarte}">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script th:inline="javascript">
+        const adresseStation = /*[[@{/stations/}]]*/ '/stations/';
+        const styles = getComputedStyle(document.documentElement);
+        const carte = L.map('carte');
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(carte);
+
+        const positions = [...document.querySelectorAll('#stations-carte li')].map(element => {
+            const station = element.dataset;
+            const position = [Number(station.latitude), Number(station.longitude)];
+            const couleur = styles.getPropertyValue('--niveau-' + station.niveau).trim();
+
+            // Contenu construit élément par élément : le nom d'une station n'est jamais interprété comme du HTML
+            const bulle = document.createElement('div');
+            const nom = document.createElement('strong');
+            nom.textContent = station.nom;
+            const situation = element.querySelector('.badge').cloneNode(true);
+            const lien = document.createElement('a');
+            lien.href = adresseStation + station.id;
+            lien.textContent = 'Voir les équipements';
+            bulle.append(nom, document.createElement('br'), situation, document.createElement('br'),
+                station.incidents + ' incident(s) en cours', document.createElement('br'), lien);
+
+            L.circleMarker(position, {radius: 12, color: '#fff', weight: 2, fillColor: couleur, fillOpacity: 0.9})
+                .bindTooltip(station.nom)
+                .bindPopup(bulle)
+                .addTo(carte);
+            return position;
+        });
+        carte.fitBounds(positions, {padding: [40, 40]});
+    </script>
+</th:block>
 </body>
 </html>

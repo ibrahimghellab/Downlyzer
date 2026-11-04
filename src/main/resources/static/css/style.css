@@ -1,5 +1,16 @@
 /* Complète Bootstrap pour ce qui est propre à Downlyzer */
 
+/* Couleurs des niveaux d'attention (RG3-RG4), définies une seule fois : badges et points de la carte les reprennent */
+:root {
+    --niveau-ROUGE: #dc3545;
+    --niveau-ORANGE: #fd7e14;
+    --niveau-VERT: #198754;
+    --niveau-PRIS_EN_CHARGE: #0d6efd;
+    --niveau-AUCUN: #6c757d;
+    --etoile-vide: #ced4da;
+    --etoile-pleine: #f5b301;
+}
+
 body {
     background-color: var(--bs-tertiary-bg);
 }
@@ -19,6 +30,53 @@ body {
 .badge.etat-HORS_SERVICE,
 .badge.statut-NON_AFFECTE {
     background-color: var(--bs-danger);
+}
+
+.badge.niveau-ROUGE { background-color: var(--niveau-ROUGE); }
+.badge.niveau-ORANGE { background-color: var(--niveau-ORANGE); }
+.badge.niveau-VERT { background-color: var(--niveau-VERT); }
+.badge.niveau-PRIS_EN_CHARGE { background-color: var(--niveau-PRIS_EN_CHARGE); }
+.badge.niveau-AUCUN { background-color: var(--niveau-AUCUN); }
+
+.carte-reseau {
+    height: 28rem;
+}
+
+/* Note affichée en étoiles (F10) */
+.etoiles {
+    color: var(--etoile-vide);
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+}
+
+.etoiles .pleine {
+    color: var(--etoile-pleine);
+}
+
+/* Saisie de la note : cinq boutons radio dessinés en étoiles. Les boutons sont dans l'ordre 5 → 1 et affichés
+   à l'envers, pour que « bouton coché ~ étoiles suivantes » colore l'étoile choisie et toutes celles à sa gauche */
+.notation {
+    display: inline-flex;
+    flex-direction: row-reverse;
+}
+
+.notation label {
+    font-size: 2rem;
+    line-height: 1;
+    padding: 0 0.1rem;
+    color: var(--etoile-vide);
+    cursor: pointer;
+}
+
+.notation input:checked ~ label,
+.notation label:hover,
+.notation label:hover ~ label {
+    color: var(--etoile-pleine);
+}
+
+.notation input:focus-visible + label {
+    outline: 2px solid var(--bs-primary);
+    border-radius: 0.25rem;
 }
 
 .lien-retour {

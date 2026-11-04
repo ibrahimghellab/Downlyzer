@@ -8,6 +8,10 @@ import java.util.List;
 public interface IncidentRepository extends JpaRepository<Incident, Long> {
     List<Incident> findByEquipementIdOrderByDateOuvertureDesc(Long equipementId);
 
+    List<Incident> findByStatutOrderByDateResolutionDesc(StatutIncident statut);
+
+    List<Incident> findByStatutNot(StatutIncident statut);
+
     // F8 : l'équipement reste hors service tant qu'un autre de ses incidents n'est pas résolu
     boolean existsByEquipementIdAndIdNotAndStatutNot(Long equipementId, Long incidentId, StatutIncident statut);
 }

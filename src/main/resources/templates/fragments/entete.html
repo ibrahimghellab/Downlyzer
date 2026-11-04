@@ -12,7 +12,13 @@
 <header th:fragment="entete" class="mb-4">
     <nav class="navbar navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand fw-bold" th:href="@{/stations}">Downlyzer</a>
+            <div class="d-flex align-items-center gap-3">
+                <a class="navbar-brand fw-bold" th:href="@{/stations}">Downlyzer</a>
+                <div class="navbar-nav flex-row gap-3" th:if="${utilisateurConnecte != null}">
+                    <a class="nav-link" th:href="@{/stations}">Stations</a>
+                    <a class="nav-link" th:href="@{/historique}">Historique</a>
+                </div>
+            </div>
             <div class="navbar-text text-light" th:if="${utilisateurConnecte != null}">
                 Bonjour <span th:text="${utilisateurConnecte.prenom}">Karim</span>
                 (<span th:text="#{profil.__${utilisateurConnecte.profil}__}">Agent de station</span>) |

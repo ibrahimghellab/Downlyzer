@@ -13,6 +13,7 @@ import fr.efrei.downlyzer.modele.utilisateur.Utilisateur;
 import fr.efrei.downlyzer.securite.SecuriteConfiguration;
 import fr.efrei.downlyzer.securite.UtilisateurConnecte;
 import fr.efrei.downlyzer.service.EquipementService;
+import fr.efrei.downlyzer.service.EvaluationService;
 import fr.efrei.downlyzer.service.IncidentService;
 import jakarta.servlet.RequestDispatcher;
 import org.junit.jupiter.api.Test;
@@ -25,11 +26,13 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -47,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
-@WebMvcTest(controllers = {IncidentControleur.class, ErreurControleur.class})
+@WebMvcTest(controllers = {IncidentControleur.class, HistoriqueControleur.class, ErreurControleur.class})
 @Import(SecuriteConfiguration.class)
 class IncidentControleurTest {
 
@@ -59,6 +62,9 @@ class IncidentControleurTest {
 
     @MockitoBean
     private EquipementService equipementService;
+
+    @MockitoBean
+    private EvaluationService evaluationService;
 
     private static RequestPostProcessor connecte(Profil profil) {
         Utilisateur utilisateur = new Utilisateur();
@@ -280,6 +286,88 @@ class IncidentControleurTest {
                 .andExpect(flash().attribute("succes", "L'incident est déclaré résolu."));
 
         verify(incidentService).resoudreIncident(1L, "Câble de traction remplacé");
+    }
+
+    private static Incident incidentResoluPar(String nomPrestataire) {
+        Incident incident = incidentNonAffecte();
+        Prestataire prestataire = new Prestataire();
+        prestataire.setNom(nomPrestataire);
+        incident.affecter(prestataire, LocalDateTime.of(2026, 10, 18, 14, 0));
+        incident.resoudre(LocalDateTime.of(2026, 10, 19, 9, 30), "Câble remplacé");
+        return incident;
+    }
+
+    @Test
+    void lHistoriqueAfficheLesIncidentsResolusAvecLeurNote() throws Exception {
+        Incident evalue = incidentResoluPar("Ascenso Maintenance");
+        when(incidentService.listerIncidentsResolus()).thenReturn(List.of(evalue));
+        when(evaluationService.trouverEvaluationsParIncident()).thenReturn(Collections.emptyMap());
+
+        mockMvc.perform(get("/historique").with(connecte(Profil.AGENT)))
+                .andExpect(status().isOk())
+                .andExpect(view().name("incidents/historique"))
+                .andExpect(content().string(containsString("19/10/2026 09:30")))
+                .andExpect(content().string(containsString("Ascenso Maintenance")))
+                .andExpect(content().string(containsString("À évaluer")));
+    }
+
+    @Test
+    void leResponsableVoitLeFormulaireDEvaluation() throws Exception {
+        Incident incident = incidentResoluPar("Ascenso Maintenance");
+        when(incidentService.trouverIncident(1L)).thenReturn(incident);
+        when(incidentService.calculerDureeOuverture(incident)).thenReturn(Duration.ofHours(20));
+        when(evaluationService.peutEvaluer(incident, false, Profil.RESPONSABLE)).thenReturn(true);
+
+        mockMvc.perform(get("/incidents/1").with(connecte(Profil.RESPONSABLE)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Enregistrer l'évaluation")));
+    }
+
+    @Test
+    void unResponsableEvalueUneInterventionEtRevientAuDetail() throws Exception {
+        mockMvc.perform(post("/incidents/1/evaluation").with(connecte(Profil.RESPONSABLE)).with(csrf())
+                        .param("note", "4").param("commentaire", "Intervention rapide."))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/incidents/1"))
+                .andExpect(flash().attribute("succes", "L'évaluation du prestataire est enregistrée."));
+
+        verify(evaluationService).evaluerIntervention(1L, 4, "Intervention rapide.", "karim.dupont");
+    }
+
+    @Test
+    void uneEvaluationSansNoteReafficheLeDetailAvecLErreur() throws Exception {
+        Incident incident = incidentResoluPar("Ascenso Maintenance");
+        when(incidentService.trouverIncident(1L)).thenReturn(incident);
+        when(incidentService.calculerDureeOuverture(incident)).thenReturn(Duration.ofHours(20));
+        when(evaluationService.peutEvaluer(incident, false, Profil.RESPONSABLE)).thenReturn(true);
+
+        mockMvc.perform(post("/incidents/1/evaluation").with(connecte(Profil.RESPONSABLE)).with(csrf())
+                        .param("note", "7"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("incidents/detail"))
+                .andExpect(model().attributeHasFieldErrors("nouvelleEvaluation", "note"));
+
+        verify(evaluationService, never()).evaluerIntervention(anyLong(), anyInt(), any(), anyString());
+    }
+
+    @Test
+    void unAgentNePeutPasEvaluer() throws Exception {
+        mockMvc.perform(post("/incidents/1/evaluation").with(connecte(Profil.AGENT)).with(csrf())
+                        .param("note", "4"))
+                .andExpect(status().isForbidden());
+
+        verify(evaluationService, never()).evaluerIntervention(anyLong(), anyInt(), any(), anyString());
+    }
+
+    @Test
+    void uneSecondeEvaluationDuMemeIncidentObtientUne409() throws Exception {
+        when(evaluationService.evaluerIntervention(1L, 4, null, "karim.dupont"))
+                .thenThrow(new TransitionInterditeException("L'intervention sur l'incident n° 1 a déjà été évaluée."));
+
+        mockMvc.perform(post("/incidents/1/evaluation").with(connecte(Profil.RESPONSABLE)).with(csrf())
+                        .param("note", "4"))
+                .andExpect(status().isConflict())
+                .andExpect(view().name("erreur"));
     }
 
     @Test

@@ -19,8 +19,13 @@ public class SecuriteConfiguration {
                         // /error et /favicon.ico libres : sinon Spring Security les mémorise comme page demandée
                         // et y renvoie l'utilisateur juste après la connexion
                         .requestMatchers("/connexion", "/css/**", "/error", "/favicon.ico").permitAll()
-                        // F7-F8 réservées au responsable (RG11) : un agent reçoit un 403, même en forgeant la requête
-                        .requestMatchers(HttpMethod.POST, "/incidents/*/affectation", "/incidents/*/resolution")
+                        // F7, F8 et F10 réservées au responsable (RG11) : un agent reçoit un 403, même en forgeant la requête
+                        .requestMatchers(HttpMethod.POST, "/incidents/*/affectation", "/incidents/*/resolution",
+                                "/incidents/*/evaluation")
+                        .hasRole("RESPONSABLE")
+                        // Piste 4 : l'onglet Carte est un paramètre de /stations, page ouverte à tous ; seul cet onglet est réservé
+                        .requestMatchers(requete -> requete.getRequestURI().equals(requete.getContextPath() + "/stations")
+                                && "carte".equals(requete.getParameter("vue")))
                         .hasRole("RESPONSABLE")
                         .anyRequest().authenticated())
                 .formLogin(connexion -> connexion

@@ -78,7 +78,10 @@
                         <select class="form-select" th:errorclass="is-invalid" id="prestataireId" th:field="*{prestataireId}" required>
                             <option value="">Choisir un prestataire…</option>
                             <option th:each="prestataire : ${prestataires}" th:value="${prestataire.id}"
-                                    th:text="${prestataire.nom}">Ascenso Maintenance</option>
+                                    th:with="note=${notesPrestataires.get(prestataire.id)}"
+                                    th:text="${note != null}
+                                        ? |${prestataire.nom} — ★ ${#numbers.formatDecimal(note.moyenne, 1, 1, 'COMMA')} / 5 (${note.nombreEvaluations} évaluation(s))|
+                                        : |${prestataire.nom} — pas encore noté|">Ascenso Maintenance — 4,0 / 5 (2 évaluation(s))</option>
                         </select>
                         <div class="invalid-feedback" th:if="${#fields.hasErrors('prestataireId')}" th:errors="*{prestataireId}">
                             Choisissez un prestataire.
@@ -135,10 +138,36 @@
             </div>
             <div class="card-body">
                 <p class="text-body-secondary mb-0" th:if="${!incident.estEvaluable()}">Résolu sans prestataire : il n'y a pas d'intervention à évaluer.</p>
-                <p class="text-body-secondary mb-0" th:if="${incident.estEvaluable() and evaluation == null}">L'intervention n'a pas encore été évaluée.</p>
+                <p class="text-body-secondary mb-0" th:if="${incident.estEvaluable() and evaluation == null and !evaluationPossible}">L'intervention n'a pas encore été évaluée.</p>
+                <form method="post" th:if="${evaluationPossible}"
+                      th:action="@{/incidents/{id}/evaluation(id=${incident.id})}" th:object="${nouvelleEvaluation}">
+                    <fieldset class="mb-3">
+                        <legend class="form-label fs-6"
+                                th:text="|Note de l'intervention de ${incident.prestataire.nom}|">Note de l'intervention</legend>
+                        <div class="notation">
+                            <th:block th:each="valeur : ${#numbers.sequence(5, 1)}">
+                                <input class="visually-hidden" type="radio" th:field="*{note}" th:value="${valeur}" required>
+                                <label th:for="${#ids.prev('note')}" th:title="|${valeur} / 5|">★<span
+                                        class="visually-hidden" th:text="|${valeur} sur 5|">5 sur 5</span></label>
+                            </th:block>
+                        </div>
+                        <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('note')}" th:errors="*{note}">
+                            Choisissez une note.
+                        </div>
+                    </fieldset>
+                    <div class="mb-3">
+                        <label class="form-label" for="commentaireEvaluation">Commentaire (facultatif)</label>
+                        <textarea class="form-control" th:errorclass="is-invalid" id="commentaireEvaluation"
+                                  th:field="*{commentaire}" rows="3" maxlength="1000"></textarea>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('commentaire')}" th:errors="*{commentaire}">
+                            Le commentaire ne doit pas dépasser 1000 caractères.
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Enregistrer l'évaluation</button>
+                </form>
                 <dl class="row mb-0" th:if="${evaluation != null}">
                     <dt class="col-sm-3">Note</dt>
-                    <dd class="col-sm-9" th:text="${evaluation.note} + ' / 5'">4 / 5</dd>
+                    <dd class="col-sm-9"><span th:replace="~{fragments/affichage :: etoiles(${evaluation.note})}">★★★★☆</span></dd>
                     <dt class="col-sm-3">Commentaire</dt>
                     <dd class="col-sm-9" th:text="${evaluation.commentaire} ?: '—'">Intervention rapide.</dd>
                     <dt class="col-sm-3">Évalué le</dt>

@@ -12,8 +12,6 @@ import fr.efrei.downlyzer.modele.Profil;
 import fr.efrei.downlyzer.modele.StatutIncident;
 import fr.efrei.downlyzer.modele.equipement.Equipement;
 import fr.efrei.downlyzer.modele.equipement.EquipementRepository;
-import fr.efrei.downlyzer.modele.evaluation.Evaluation;
-import fr.efrei.downlyzer.modele.evaluation.EvaluationRepository;
 import fr.efrei.downlyzer.modele.incident.Incident;
 import fr.efrei.downlyzer.modele.incident.IncidentRepository;
 import fr.efrei.downlyzer.modele.prestataire.Prestataire;
@@ -27,7 +25,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class IncidentService {
@@ -35,17 +32,15 @@ public class IncidentService {
     private final IncidentRepository incidentRepository;
     private final EquipementRepository equipementRepository;
     private final UtilisateurRepository utilisateurRepository;
-    private final EvaluationRepository evaluationRepository;
     private final PrestataireRepository prestataireRepository;
     private final Clock horloge;
 
     public IncidentService(IncidentRepository incidentRepository, EquipementRepository equipementRepository,
-                           UtilisateurRepository utilisateurRepository, EvaluationRepository evaluationRepository,
-                           PrestataireRepository prestataireRepository, Clock horloge) {
+                           UtilisateurRepository utilisateurRepository, PrestataireRepository prestataireRepository,
+                           Clock horloge) {
         this.incidentRepository = incidentRepository;
         this.equipementRepository = equipementRepository;
         this.utilisateurRepository = utilisateurRepository;
-        this.evaluationRepository = evaluationRepository;
         this.prestataireRepository = prestataireRepository;
         this.horloge = horloge;
     }
@@ -70,8 +65,9 @@ public class IncidentService {
                 .orElseThrow(() -> new IncidentIntrouvableException(id));
     }
 
-    public Optional<Evaluation> trouverEvaluation(Long incidentId) {
-        return evaluationRepository.findByIncidentId(incidentId);
+    // F9 : RG7, du plus récent au plus ancien par date de résolution
+    public List<Incident> listerIncidentsResolus() {
+        return incidentRepository.findByStatutOrderByDateResolutionDesc(StatutIncident.RESOLU);
     }
 
     public Duration calculerDureeOuverture(Incident incident) {

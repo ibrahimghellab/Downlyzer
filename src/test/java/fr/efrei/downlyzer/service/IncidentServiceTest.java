@@ -9,7 +9,6 @@ import fr.efrei.downlyzer.modele.Profil;
 import fr.efrei.downlyzer.modele.StatutIncident;
 import fr.efrei.downlyzer.modele.equipement.Equipement;
 import fr.efrei.downlyzer.modele.equipement.EquipementRepository;
-import fr.efrei.downlyzer.modele.evaluation.EvaluationRepository;
 import fr.efrei.downlyzer.modele.incident.Incident;
 import fr.efrei.downlyzer.modele.incident.IncidentRepository;
 import fr.efrei.downlyzer.modele.prestataire.Prestataire;
@@ -54,7 +53,7 @@ class IncidentServiceTest {
         prestataireRepository = mock(PrestataireRepository.class);
         Clock horloge = Clock.fixed(MAINTENANT.atZone(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
         incidentService = new IncidentService(incidentRepository, equipementRepository, utilisateurRepository,
-                mock(EvaluationRepository.class), prestataireRepository, horloge);
+                prestataireRepository, horloge);
 
         equipement = new Equipement();
         equipement.setTypeEquipement(new TypeEquipement());
@@ -160,6 +159,14 @@ class IncidentServiceTest {
         assertThatThrownBy(() -> incidentService.trouverIncident(999L))
                 .isInstanceOf(IncidentIntrouvableException.class)
                 .hasMessage("L'incident n° 999 n'existe pas.");
+    }
+
+    @Test
+    void lHistoriqueDemandeLesIncidentsResolusDuPlusRecentAuPlusAncien() {
+        List<Incident> resolus = List.of(incidentResolu());
+        when(incidentRepository.findByStatutOrderByDateResolutionDesc(StatutIncident.RESOLU)).thenReturn(resolus);
+
+        assertThat(incidentService.listerIncidentsResolus()).isSameAs(resolus);
     }
 
     @Test
