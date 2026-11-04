@@ -1,0 +1,47 @@
+name: Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    # une vraie base pour DownlyzerApplicationTests, jetée à la fin du job
+    services:
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    # base qui existe que le temps du job, ces mots de passe protègent rien
+    env:
+      DB_USERNAME: downlyzer_app
+      DB_PASSWORD: ci
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      # le script et le compte sont les mêmes qu'en local, lancés avec le client mariadb du conteneur
+      - name: Création de la base
+        run: |
+          docker exec -i ${{ job.services.mariadb.id }} mariadb -u root -proot --default-character-set=utf8mb4 < db/create.sql
+          docker exec -i ${{ job.services.mariadb.id }} mariadb -u root -proot -e "CREATE USER 'downlyzer_app'@'%' IDENTIFIED BY 'ci'; GRANT SELECT, INSERT, UPDATE, DELETE ON downlyzer.* TO 'downlyzer_app'@'%';"
+
+      - name: Tests
+        run: ./mvnw -B verify
