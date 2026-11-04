@@ -18,10 +18,12 @@ jobs:
             client: mariadb
             sante: healthcheck.sh --connect --innodb_initialized
             url: jdbc:mariadb://localhost:3306/downlyzer
+            dialecte: org.hibernate.dialect.MariaDBDialect
           - image: mysql:8.4
             client: mysql
             sante: mysqladmin ping -h 127.0.0.1 -proot
             url: jdbc:mariadb://localhost:3306/downlyzer?sslMode=trust
+            dialecte: org.hibernate.dialect.MySQLDialect
 
     name: tests (${{ matrix.image }})
 
@@ -42,6 +44,7 @@ jobs:
     # base qui existe que le temps du job, ces mots de passe protègent rien
     env:
       DB_URL: ${{ matrix.url }}
+      DB_DIALECT: ${{ matrix.dialecte }}
       DB_USERNAME: downlyzer_app
       DB_PASSWORD: ci
 
