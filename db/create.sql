@@ -23,10 +23,6 @@ DROP TABLE IF EXISTS prestataire;
 DROP TABLE IF EXISTS type_equipement;
 DROP TABLE IF EXISTS station;
 
--- ---------------------------------------------------------------------
--- Schéma
--- ---------------------------------------------------------------------
-
 CREATE TABLE station (
     id        BIGINT       NOT NULL AUTO_INCREMENT,
     nom       VARCHAR(100) NOT NULL,
@@ -53,7 +49,6 @@ CREATE TABLE equipement (
     station_id         BIGINT       NOT NULL,
     type_equipement_id BIGINT       NOT NULL,
     CONSTRAINT pk_equipement PRIMARY KEY (id),
-    -- RG9 : la référence d'un équipement est unique
     CONSTRAINT uk_equipement_reference UNIQUE (reference),
     CONSTRAINT ck_equipement_etat CHECK (etat IN ('EN_SERVICE', 'DEGRADE', 'HORS_SERVICE')),
     CONSTRAINT fk_equipement_station FOREIGN KEY (station_id) REFERENCES station (id),
@@ -70,8 +65,6 @@ CREATE TABLE prestataire (
     CONSTRAINT uk_prestataire_nom UNIQUE (nom)
 ) ENGINE = InnoDB;
 
--- Types d'équipement sur lesquels un prestataire sait intervenir
--- (sert aux statistiques et, plus tard, à l'aide à l'affectation)
 CREATE TABLE prestataire_specialite (
     prestataire_id     BIGINT NOT NULL,
     type_equipement_id BIGINT NOT NULL,
@@ -121,7 +114,6 @@ CREATE TABLE incident (
         OR (statut = 'RESOLU' AND date_resolution IS NOT NULL)
     ),
     CONSTRAINT ck_incident_date_affectation CHECK (date_affectation IS NULL OR date_affectation >= date_ouverture),
-    -- RG5 : la résolution est postérieure ou égale à l'ouverture
     CONSTRAINT ck_incident_date_resolution CHECK (date_resolution IS NULL OR date_resolution >= date_ouverture)
 ) ENGINE = InnoDB;
 
@@ -129,7 +121,6 @@ CREATE TABLE incident (
 CREATE INDEX idx_incident_statut ON incident (statut);
 CREATE INDEX idx_incident_date_resolution ON incident (date_resolution);
 
--- RG8 : une seule évaluation par incident, note entière de 1 à 5.
 -- « Incident résolu et affecté » est vérifié dans la couche service (règle sur une autre table).
 CREATE TABLE evaluation (
     id              BIGINT        NOT NULL AUTO_INCREMENT,
@@ -144,10 +135,6 @@ CREATE TABLE evaluation (
     CONSTRAINT fk_evaluation_incident FOREIGN KEY (incident_id) REFERENCES incident (id),
     CONSTRAINT fk_evaluation_auteur FOREIGN KEY (auteur_id) REFERENCES utilisateur (id)
 ) ENGINE = InnoDB;
-
--- ---------------------------------------------------------------------
--- Données de démonstration
--- ---------------------------------------------------------------------
 
 INSERT INTO station (id, nom, code, latitude, longitude) VALUES
     (1, 'Gare Centrale',          'GCE', 48.8443, 2.3740),
@@ -230,7 +217,7 @@ INSERT INTO incident (id, equipement_id, declarant_id, source, description, date
     (11, 5, 2,    'MANUELLE', 'Porte palière qui ne se referme pas.',
          NOW() - INTERVAL 50 HOUR, 'AFFECTE', 5, NOW() - INTERVAL 20 HOUR);
 
--- Incidents résolus : historique varié pour l'historique (F9) et les graphiques
+-- Incidents résolus
 -- Le 21 rend l'équipement 13 fragile (3 incidents sur 30 jours) ; le 22 est trop vieux pour compter
 INSERT INTO incident (id, equipement_id, declarant_id, source, description, date_ouverture, statut,
                       prestataire_id, date_affectation, date_resolution, commentaire_resolution) VALUES

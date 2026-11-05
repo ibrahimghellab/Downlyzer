@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
-// un capteur s'identifie avec une clé dans X-API-KEY, sans session
 public class CleApiFiltre extends OncePerRequestFilter {
 
     public static final String EN_TETE = "X-API-KEY";

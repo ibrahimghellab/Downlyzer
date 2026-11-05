@@ -19,7 +19,6 @@ import org.springframework.security.web.authentication.AnonymousAuthenticationFi
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-// deux chaînes : une pour l'api, une pour les pages
 @Configuration
 public class SecuriteConfiguration {
 
@@ -33,7 +32,6 @@ public class SecuriteConfiguration {
             "{\"title\":\"Accès refusé\",\"status\":403,"
                     + "\"detail\":\"L'API est réservée aux systèmes externes identifiés par une clé d'API.\"}";
 
-    // api : pas de session ni de csrf, et un 401 en json au lieu de rediriger vers la connexion
     @Bean
     @Order(1)
     public SecurityFilterChain filtresApi(HttpSecurity http, @Value("${downlyzer.api.cle}") String cleApi) throws Exception {
@@ -62,7 +60,6 @@ public class SecuriteConfiguration {
         reponse.getWriter().write(corps);
     }
 
-    // pages : connexion par formulaire et session
     @Bean
     @Order(2)
     public SecurityFilterChain filtresPagesWeb(HttpSecurity http) throws Exception {

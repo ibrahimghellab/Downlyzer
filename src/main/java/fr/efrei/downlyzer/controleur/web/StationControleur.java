@@ -19,7 +19,6 @@ public class StationControleur {
         this.stationService = stationService;
     }
 
-    // deux onglets : la liste, et la carte avec ?vue=carte (réservée au responsable)
     @GetMapping
     public String afficherStations(@RequestParam(defaultValue = "liste") String vue,
                                    @AuthenticationPrincipal UtilisateurConnecte utilisateur, Model model) {

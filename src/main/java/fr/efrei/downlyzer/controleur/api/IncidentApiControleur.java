@@ -21,7 +21,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import java.util.List;
 
-// même service que les pages, les erreurs sont gérées par GestionnaireExceptionsApi
 @RestController
 @RequestMapping("/api/incidents")
 public class IncidentApiControleur {

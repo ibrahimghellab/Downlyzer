@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-// seulement pour les pages, l'api a son propre gestionnaire en json
 @ControllerAdvice(basePackages = "fr.efrei.downlyzer.controleur.web")
 public class GestionnaireExceptionsWeb {
 

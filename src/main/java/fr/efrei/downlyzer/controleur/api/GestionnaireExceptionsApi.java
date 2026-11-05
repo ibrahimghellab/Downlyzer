@@ -48,7 +48,6 @@ public class GestionnaireExceptionsApi {
         return probleme(HttpStatus.BAD_REQUEST, "Donnée invalide", exception.getMessage());
     }
 
-    // on renvoie toutes les erreurs d'un coup avec le champ concerné
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ProblemDetail donneesInvalides(MethodArgumentNotValidException exception) {

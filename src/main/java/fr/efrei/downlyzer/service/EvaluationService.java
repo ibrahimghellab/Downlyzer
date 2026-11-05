@@ -50,7 +50,6 @@ public class EvaluationService {
                 .collect(Collectors.toMap(evaluation -> evaluation.getIncident().getId(), Function.identity()));
     }
 
-    // la note est affichée au moment de choisir le prestataire
     public Map<Long, NoteMoyennePrestataire> calculerNotesMoyennesParPrestataire() {
         return evaluationRepository.calculerNotesMoyennes().stream()
                 .collect(Collectors.toMap(NoteMoyennePrestataire::prestataireId, Function.identity()));

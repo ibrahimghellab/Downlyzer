@@ -14,7 +14,6 @@ public class Evaluation {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    // une seule évaluation par incident
     @OneToOne(optional = false)
     @JoinColumn(name = "incident_id", nullable = false, unique = true)
     private Incident incident;

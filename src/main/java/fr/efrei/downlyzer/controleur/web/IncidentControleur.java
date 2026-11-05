@@ -93,7 +93,6 @@ public class IncidentControleur {
         return "redirect:/incidents/" + id;
     }
 
-    // réservé au responsable (voir SecuriteConfiguration)
     @PostMapping("/incidents/{id}/affectation")
     public String affecterPrestataire(@PathVariable Long id,
                                       @Valid @ModelAttribute("affectation") AffectationFormulaire affectation,
@@ -108,7 +107,6 @@ public class IncidentControleur {
         return "redirect:/incidents/" + id;
     }
 
-    // réservé au responsable (voir SecuriteConfiguration)
     @PostMapping("/incidents/{id}/resolution")
     public String resoudreIncident(@PathVariable Long id,
                                    @Valid @ModelAttribute("resolution") ResolutionFormulaire resolution,
@@ -123,7 +121,6 @@ public class IncidentControleur {
         return "redirect:/incidents/" + id;
     }
 
-    // réservé au responsable (voir SecuriteConfiguration)
     @PostMapping("/incidents/{id}/evaluation")
     public String evaluerIntervention(@PathVariable Long id,
                                       @Valid @ModelAttribute("nouvelleEvaluation") EvaluationFormulaire nouvelleEvaluation,

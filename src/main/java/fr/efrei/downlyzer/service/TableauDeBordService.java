@@ -67,7 +67,6 @@ public class TableauDeBordService {
                 .toList();
     }
 
-    // une colonne par niveau, même vide, en gardant l'ordre de tri
     public Map<NiveauAttention, List<LigneTableauDeBord>> regrouperParNiveau(List<LigneTableauDeBord> lignes) {
         Map<NiveauAttention, List<LigneTableauDeBord>> colonnes = new EnumMap<>(NiveauAttention.class);
         for (NiveauAttention niveau : NiveauAttention.values()) {

@@ -14,7 +14,6 @@ public class Utilisateur {
     @Column(name = "login", nullable = false, length = 50, unique = true)
     private String login;
 
-    // empreinte bcrypt, jamais le mot de passe en clair
     @Column(name = "mot_de_passe_hash", nullable = false, length = 60)
     private String motDePasseHash;
 

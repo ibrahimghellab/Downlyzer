@@ -30,7 +30,6 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-// vraie politique d'urgence, repositories simulés et horloge figée
 class TableauDeBordServiceTest {
 
     private static final LocalDateTime MAINTENANT = LocalDateTime.of(2026, 10, 14, 12, 0);

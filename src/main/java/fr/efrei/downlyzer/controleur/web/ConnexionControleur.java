@@ -13,7 +13,6 @@ public class ConnexionControleur {
         return "connexion";
     }
 
-    // le responsable arrive sur le tableau de bord, l'agent sur les stations
     @GetMapping("/")
     public String accueil(@AuthenticationPrincipal UtilisateurConnecte utilisateur) {
         return utilisateur.getProfil().peutSuperviser() ? "redirect:/tableau-de-bord" : "redirect:/stations";

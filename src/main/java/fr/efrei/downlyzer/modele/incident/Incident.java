@@ -134,7 +134,6 @@ public class Incident {
         return statut == StatutIncident.AFFECTE;
     }
 
-    // il faut un incident résolu ET un prestataire pour pouvoir évaluer
     public boolean estEvaluable() {
         return estResolu() && prestataire != null;
     }

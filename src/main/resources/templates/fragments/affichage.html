@@ -7,7 +7,6 @@
 
 <span th:fragment="badgeFragile" class="badge badge-fragile">Équipement fragile</span>
 
-<!-- texte caché pour les lecteurs d'écran -->
 <span th:fragment="etoiles(note)" class="etoiles" th:title="|${note} / 5|">
     <span aria-hidden="true" th:each="rang : ${#numbers.sequence(1, 5)}"
           th:classappend="${rang <= note} ? 'pleine'">★</span>

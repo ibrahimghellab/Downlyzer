@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 
 import java.util.List;
 
-// réservé au responsable (voir SecuriteConfiguration)
 @Controller
 public class TableauDeBordControleur {
 

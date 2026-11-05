@@ -5,7 +5,7 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn -q -B dependency:go-offline
 COPY src ./src
-# les tests tournent en local et pas ici : DownlyzerApplicationTests a besoin d'une base
+# les tests tournent dans la ci, qui a une base
 RUN mvn -q -B package -DskipTests
 
 FROM eclipse-temurin:21-jre

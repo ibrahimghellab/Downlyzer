@@ -146,7 +146,6 @@ public class IncidentService {
     @Transactional
     public void resoudreIncident(Long id, String commentaire) {
         Incident incident = trouverIncident(id);
-        // un commentaire vide est enregistré à null
         String commentaireSaisi = commentaire == null || commentaire.isBlank() ? null : commentaire.strip();
         incident.resoudre(LocalDateTime.now(horloge), commentaireSaisi);
         Equipement equipement = incident.getEquipement();

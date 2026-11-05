@@ -16,7 +16,6 @@ public class Station {
     @Column(name = "code", nullable = false, length = 10, unique = true)
     private String code;
 
-    // coordonnées pour placer la station sur la carte
     @Column(name = "latitude", nullable = false)
     private double latitude;
 

@@ -45,7 +45,6 @@ public class ErreurControleur implements ErrorController {
         return "erreur";
     }
 
-    // pour un client qui attend du json on renvoie pas de page html
     @RequestMapping(value = "/error", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ProblemDetail> afficherErreurJson(HttpServletRequest requete) {
         Object code = requete.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
@@ -55,7 +54,6 @@ public class ErreurControleur implements ErrorController {
         ProblemDetail probleme = ProblemDetail.forStatusAndDetail(statutConnu,
                 introuvable ? "Cette adresse n'existe pas." : "Une erreur inattendue s'est produite. Réessayez plus tard.");
         probleme.setTitle(introuvable ? "Introuvable" : "Erreur inattendue");
-        // on met l'adresse demandée et pas /error
         if (requete.getAttribute(RequestDispatcher.ERROR_REQUEST_URI) instanceof String adresse) {
             probleme.setInstance(URI.create(adresse));
         }

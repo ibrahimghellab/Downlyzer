@@ -26,7 +26,6 @@ public class Prestataire {
     @Column(name = "actif", nullable = false)
     private boolean actif;
 
-    // types d'équipement sur lesquels il peut intervenir
     @ManyToMany
     @JoinTable(
             name = "prestataire_specialite",

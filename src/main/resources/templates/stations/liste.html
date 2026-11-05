@@ -83,7 +83,7 @@
             const position = [Number(station.latitude), Number(station.longitude)];
             const couleur = styles.getPropertyValue('--niveau-' + station.niveau).trim();
 
-            // Contenu construit élément par élément : le nom d'une station n'est jamais interprété comme du HTML
+            // élément par élément pour que le nom d'une station ne soit jamais interprété comme du html
             const bulle = document.createElement('div');
             const nom = document.createElement('strong');
             nom.textContent = station.nom;

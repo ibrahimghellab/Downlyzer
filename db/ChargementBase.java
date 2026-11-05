@@ -45,7 +45,6 @@ public class ChargementBase {
         }
     }
 
-    // un morceau qui contient que des commentaires et des lignes vides
     private static boolean estVide(String instruction) {
         return instruction.lines().map(String::strip).allMatch(ligne -> ligne.isEmpty() || ligne.startsWith("--"));
     }

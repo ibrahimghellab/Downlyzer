@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-// vraie politique de fragilité, repositories simulés et horloge figée
 class EquipementServiceTest {
 
     private static final LocalDateTime MAINTENANT = LocalDateTime.of(2026, 11, 5, 14, 0);

@@ -39,7 +39,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
-// sans base : repositories simulés et horloge figée
 class IncidentServiceTest {
 
     private static final LocalDateTime MAINTENANT = LocalDateTime.of(2026, 10, 20, 12, 0);
