@@ -20,6 +20,7 @@ public class EquipementControleur {
     public String afficherFicheEquipement(@PathVariable Long id, Model model) {
         model.addAttribute("equipement", equipementService.trouverEquipement(id));
         model.addAttribute("incidents", equipementService.listerIncidentsDeLEquipement(id));
+        model.addAttribute("fragile", equipementService.estFragile(id));
         return "equipements/fiche";
     }
 }

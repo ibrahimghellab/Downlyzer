@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Historique — Downlyzer</title>
+    <title>Historique - Downlyzer</title>
     <th:block th:replace="~{fragments/entete :: styles}"></th:block>
 </head>
 <body>
@@ -34,11 +34,11 @@
                     <td class="text-nowrap"><a th:href="@{/equipements/{id}(id=${incident.equipement.id})}"
                            th:text="${incident.equipement.reference}">DIS-001</a></td>
                     <td class="text-nowrap" th:text="${incident.equipement.station.nom}">Gare Centrale</td>
-                    <td class="text-nowrap" th:text="${incident.prestataire?.nom} ?: '—'">ValiTech Contrôle</td>
+                    <td class="text-nowrap" th:text="${incident.prestataire?.nom} ?: 'Aucun'">ValiTech Contrôle</td>
                     <td class="text-nowrap">
                         <th:block th:if="${evaluation != null}"><span th:replace="~{fragments/affichage :: etoiles(${evaluation.note})}">★★★★★</span></th:block>
                         <span class="badge text-bg-warning" th:if="${evaluation == null and incident.estEvaluable()}">À évaluer</span>
-                        <span class="text-body-secondary" th:if="${!incident.estEvaluable()}">—</span>
+                        <span class="text-body-secondary" th:if="${!incident.estEvaluable()}">Non évaluable</span>
                     </td>
                 </tr>
                 </tbody>

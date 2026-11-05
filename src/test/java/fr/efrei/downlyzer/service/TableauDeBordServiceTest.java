@@ -13,6 +13,7 @@ import fr.efrei.downlyzer.modele.typeequipement.TypeEquipementRepository;
 import fr.efrei.downlyzer.modele.utilisateur.Utilisateur;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -20,6 +21,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,6 +37,7 @@ class TableauDeBordServiceTest {
 
     private IncidentRepository incidentRepository;
     private EquipementRepository equipementRepository;
+    private EquipementService equipementService;
     private TableauDeBordService tableauDeBordService;
 
     private final Station gare = station("Gare Centrale");
@@ -49,11 +52,34 @@ class TableauDeBordServiceTest {
     void preparer() {
         incidentRepository = mock(IncidentRepository.class);
         equipementRepository = mock(EquipementRepository.class);
+        equipementService = mock(EquipementService.class);
         Clock horloge = Clock.fixed(MAINTENANT.atZone(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
         tableauDeBordService = new TableauDeBordService(incidentRepository, equipementRepository,
-                mock(TypeEquipementRepository.class), new PolitiqueUrgence(), horloge);
+                mock(TypeEquipementRepository.class), new PolitiqueUrgence(), equipementService, horloge);
         when(incidentRepository.trouverEnCours(eq(StatutIncident.RESOLU), any(), any()))
                 .thenReturn(List.of(vert2h, prisEnCharge, orange50h, rouge80h, rouge100h));
+    }
+
+    @Test
+    void uneLigneDitSiSonEquipementEstFragile() {
+        Equipement fragile = new Equipement();
+        ReflectionTestUtils.setField(fragile, "id", 1L);
+        fragile.setStation(gare);
+        Equipement solide = new Equipement();
+        ReflectionTestUtils.setField(solide, "id", 2L);
+        solide.setStation(gare);
+        Incident surFragile = Incident.declarerManuellement(fragile, new Utilisateur(), "Panne", MAINTENANT.minusHours(1));
+        Incident surSolide = Incident.declarerManuellement(solide, new Utilisateur(), "Panne", MAINTENANT.minusHours(2));
+        when(incidentRepository.trouverEnCours(eq(StatutIncident.RESOLU), any(), any()))
+                .thenReturn(List.of(surFragile, surSolide));
+        when(equipementService.listerEquipementsFragiles()).thenReturn(Set.of(1L));
+
+        List<LigneTableauDeBord> lignes = tableauDeBordService.listerIncidentsEnCours(null, null, null, null);
+
+        assertThat(lignes).filteredOn(ligne -> ligne.incident() == surFragile)
+                .singleElement().extracting(LigneTableauDeBord::equipementFragile).isEqualTo(true);
+        assertThat(lignes).filteredOn(ligne -> ligne.incident() == surSolide)
+                .singleElement().extracting(LigneTableauDeBord::equipementFragile).isEqualTo(false);
     }
 
     private static Station station(String nom) {

@@ -237,6 +237,11 @@ h1, .h1, h2, .h2, h3, .h3 {
     white-space: nowrap;
 }
 
+/* laisse la place au badge fragile, le tableau reste dans la page sur grand écran */
+.tableau-incidents .texte-tronque {
+    max-width: 20rem;
+}
+
 .chiffres-alignes {
     font-variant-numeric: tabular-nums;
 }
@@ -543,6 +548,25 @@ a.indicateur:focus-visible {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+/* plein et foncé pour ressortir sans reprendre une couleur de niveau */
+.badge-fragile {
+    align-self: flex-start;
+    font-weight: 600;
+    color: #fff;
+    background-color: var(--encre);
+    border-color: var(--encre);
+}
+
+/* triangle en css, le texte du badge reste exactement celui du sujet */
+.badge-fragile::before {
+    content: "\26A0\FE0E";
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    background-color: transparent;
+    line-height: 1;
 }
 
 .fiche-pied {

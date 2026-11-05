@@ -52,7 +52,10 @@ public class IncidentControleur {
             return "incidents/declaration";
         }
         incidentService.declarerIncident(equipementId, declaration.getDescription(), utilisateur.getUsername());
-        redirection.addFlashAttribute("succes", "L'incident a bien été déclaré.");
+        // après la déclaration, pour que le nouvel incident compte
+        redirection.addFlashAttribute("succes", equipementService.estFragile(equipementId)
+                ? "L'incident a bien été déclaré. Attention : cet équipement est fragile."
+                : "L'incident a bien été déclaré.");
         return "redirect:/equipements/" + equipementId;
     }
 

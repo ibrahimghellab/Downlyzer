@@ -231,6 +231,7 @@ INSERT INTO incident (id, equipement_id, declarant_id, source, description, date
          NOW() - INTERVAL 50 HOUR, 'AFFECTE', 5, NOW() - INTERVAL 20 HOUR);
 
 -- Incidents résolus : historique varié pour l'historique (F9) et les graphiques
+-- Le 21 rend l'équipement 13 fragile (3 incidents sur 30 jours) ; le 22 est trop vieux pour compter
 INSERT INTO incident (id, equipement_id, declarant_id, source, description, date_ouverture, statut,
                       prestataire_id, date_affectation, date_resolution, commentaire_resolution) VALUES
     (12, 4,  2,    'MANUELLE', 'Bourrage de billets dans le distributeur.',
@@ -259,7 +260,13 @@ INSERT INTO incident (id, equipement_id, declarant_id, source, description, date
          NOW() - INTERVAL 3 DAY + INTERVAL 1 HOUR, 'Fausse alerte : redémarrage du terminal, aucune intervention.'),
     (20, 16, NULL, 'CAPTEUR',  'Portique resté ouvert en permanence.',
          NOW() - INTERVAL 2 DAY,  'RESOLU', 3, NOW() - INTERVAL 2 DAY + INTERVAL 1 HOUR,
-         NOW() - INTERVAL 1 DAY,  'Moteur du vantail recalé.');
+         NOW() - INTERVAL 1 DAY,  'Moteur du vantail recalé.'),
+    (21, 13, NULL, 'CAPTEUR',  'Arrêt de sécurité de l''escalier mécanique.',
+         NOW() - INTERVAL 8 DAY,  'RESOLU', NULL, NULL,
+         NOW() - INTERVAL 8 DAY + INTERVAL 2 HOUR, 'Fausse alerte : capteur réarmé sur place.'),
+    (22, 4,  2,    'MANUELLE', 'Lecteur de carte bancaire en panne.',
+         NOW() - INTERVAL 45 DAY, 'RESOLU', NULL, NULL,
+         NOW() - INTERVAL 44 DAY, 'Lecteur redémarré sur place.');
 
 -- Évaluations : volontairement absentes sur les incidents 18 et 20 pour pouvoir démontrer F10.
 -- L'incident 19, résolu sans prestataire, n'est pas évaluable (RG8).

@@ -22,6 +22,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.time.Duration;
@@ -87,6 +88,29 @@ class IncidentControleurTest {
         declarant.setNom("Dupont");
         return Incident.declarerManuellement(equipement, declarant, "Ascenseur bloqué entre deux étages",
                 LocalDateTime.of(2026, 10, 18, 13, 0));
+    }
+
+    private ResultActions declarerUnIncident() throws Exception {
+        return mockMvc.perform(post("/equipements/1/incidents").with(connecte(Profil.AGENT)).with(csrf())
+                .param("description", "Ascenseur bloqué entre deux étages"));
+    }
+
+    @Test
+    void laConfirmationPrevientQuandLEquipementDevientFragile() throws Exception {
+        when(equipementService.estFragile(1L)).thenReturn(true);
+
+        declarerUnIncident()
+                .andExpect(redirectedUrl("/equipements/1"))
+                .andExpect(flash().attribute("succes", containsString("fragile")));
+    }
+
+    @Test
+    void laConfirmationNeParlePasDeFragiliteSinon() throws Exception {
+        when(equipementService.estFragile(1L)).thenReturn(false);
+
+        declarerUnIncident()
+                .andExpect(redirectedUrl("/equipements/1"))
+                .andExpect(flash().attribute("succes", not(containsString("fragile"))));
     }
 
     @Test

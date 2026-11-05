@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Modifier un incident — Downlyzer</title>
+    <title>Modifier un incident - Downlyzer</title>
     <th:block th:replace="~{fragments/entete :: styles}"></th:block>
 </head>
 <body>
@@ -13,7 +13,7 @@
 
     <h1 class="h2">Modifier la description</h1>
     <p class="text-body-secondary">
-        <strong th:text="${incident.equipement.reference} + ' — ' + ${incident.equipement.libelle}">ASC-001 — Ascenseur quai A</strong>,
+        <strong th:text="${incident.equipement.reference} + ' - ' + ${incident.equipement.libelle}">ASC-001 - Ascenseur quai A</strong>,
         station <span th:text="${incident.equipement.station.nom}">Gare Centrale</span>
     </p>
 

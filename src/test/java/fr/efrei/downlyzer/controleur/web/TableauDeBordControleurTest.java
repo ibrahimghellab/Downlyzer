@@ -74,7 +74,7 @@ class TableauDeBordControleurTest {
         equipement.setStation(station);
         Incident incident = Incident.declarerManuellement(equipement, new Utilisateur(), "Ascenseur bloqué entre deux étages",
                 LocalDateTime.of(2026, 10, 10, 8, 0));
-        LigneTableauDeBord ligne = new LigneTableauDeBord(incident, NiveauAttention.ROUGE, Duration.ofHours(80));
+        LigneTableauDeBord ligne = new LigneTableauDeBord(incident, NiveauAttention.ROUGE, Duration.ofHours(80), false);
         when(tableauDeBordService.listerIncidentsEnCours(any(), any(), any(), any())).thenReturn(List.of(ligne));
         when(tableauDeBordService.regrouperParNiveau(any())).thenReturn(colonnes(List.of(ligne)));
         when(tableauDeBordService.calculerIndicateurs()).thenReturn(
@@ -105,6 +105,38 @@ class TableauDeBordControleurTest {
                 .andExpect(content().string(not(containsString("<table"))));
     }
 
+    private void rendreLEquipementFragile() {
+        LigneTableauDeBord ligne = tableauDeBordService.listerIncidentsEnCours(null, null, null, null).getFirst();
+        LigneTableauDeBord fragile = new LigneTableauDeBord(ligne.incident(), ligne.niveau(), ligne.dureeOuverture(), true);
+        when(tableauDeBordService.listerIncidentsEnCours(any(), any(), any(), any())).thenReturn(List.of(fragile));
+        when(tableauDeBordService.regrouperParNiveau(any())).thenReturn(colonnes(List.of(fragile)));
+    }
+
+    @Test
+    void leBadgeFragileEstSurLaFicheDUnIncidentDontLEquipementEstFragile() throws Exception {
+        rendreLEquipementFragile();
+
+        mockMvc.perform(get("/tableau-de-bord").with(connecte(Profil.RESPONSABLE)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Équipement fragile")));
+    }
+
+    @Test
+    void leBadgeFragileEstAussiDansLaVueEnListe() throws Exception {
+        rendreLEquipementFragile();
+
+        mockMvc.perform(get("/tableau-de-bord").param("vue", "LISTE").with(connecte(Profil.RESPONSABLE)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Équipement fragile")));
+    }
+
+    @Test
+    void pasDeBadgeFragileSiLEquipementNeLEstPas() throws Exception {
+        mockMvc.perform(get("/tableau-de-bord").with(connecte(Profil.RESPONSABLE)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("Équipement fragile"))));
+    }
+
     @Test
     void uneColonneTropChargeeRenvoieVersLaListeFiltreeSurSonNiveau() throws Exception {
         LigneTableauDeBord ligne = tableauDeBordService.listerIncidentsEnCours(null, null, null, null).getFirst();
@@ -122,7 +154,7 @@ class TableauDeBordControleurTest {
         mockMvc.perform(get("/tableau-de-bord").param("vue", "LISTE").with(connecte(Profil.RESPONSABLE)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("<table")))
-                .andExpect(content().string(containsString("Rouge — 72 h et plus")))
+                .andExpect(content().string(containsString("Rouge (72 h et plus)")))
                 .andExpect(content().string(containsString("En attente")));
     }
 
@@ -130,10 +162,10 @@ class TableauDeBordControleurTest {
     void laBarreDeRepartitionNAfficheQueLesNiveauxPresentsEtLaLegendeLesDonneTous() throws Exception {
         mockMvc.perform(get("/tableau-de-bord").param("vue", "LISTE").with(connecte(Profil.RESPONSABLE)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Rouge — 72 h et plus : 3 incident(s), 27 %")))
+                .andExpect(content().string(containsString("Rouge (72 h et plus) : 3 incident(s), 27 %")))
                 .andExpect(content().string(containsString("flex-grow: 5")))
-                .andExpect(content().string(not(containsString("Orange — 48 à 72 h : 0 incident(s)"))))
-                .andExpect(content().string(containsString("Orange — 48 à 72 h")));
+                .andExpect(content().string(not(containsString("Orange (48 à 72 h) : 0 incident(s)"))))
+                .andExpect(content().string(containsString("Orange (48 à 72 h)")));
     }
 
     @Test

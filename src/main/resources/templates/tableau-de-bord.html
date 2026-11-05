@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Tableau de bord — Downlyzer</title>
+    <title>Tableau de bord - Downlyzer</title>
     <th:block th:replace="~{fragments/entete :: styles}"></th:block>
 </head>
 <body>
@@ -41,7 +41,7 @@
                 <dd>
                     <th:block th:if="${indicateurs.delaiMoyenDeResolution != null}"><span
                             th:replace="~{fragments/affichage :: duree(${indicateurs.delaiMoyenDeResolution})}">1 j 12 h</span></th:block>
-                    <th:block th:if="${indicateurs.delaiMoyenDeResolution == null}">—</th:block>
+                    <th:block th:if="${indicateurs.delaiMoyenDeResolution == null}">Aucun incident résolu</th:block>
                 </dd>
             </div>
         </dl>
@@ -109,6 +109,7 @@
                     <span th:text="${ligne.incident.equipement.station.nom}">Université</span>
                 </span>
                 <span class="fiche-description" th:text="${ligne.incident.description}">Ascenseur PMR bloqué au niveau -1.</span>
+                <th:block th:if="${ligne.equipementFragile}"><span th:replace="~{fragments/affichage :: badgeFragile}">Équipement fragile</span></th:block>
                 <span class="fiche-pied">
                     <span class="chiffres-alignes">
                         <span th:text="${ligne.incident.prestataire != null} ? 'Ouvert depuis' : 'En attente depuis'">En attente depuis</span>
@@ -144,7 +145,7 @@
                     <ul class="legende">
                         <li th:each="part : ${indicateurs.repartition}">
                             <span class="pastille" th:classappend="'couleur-' + ${part.niveau}" aria-hidden="true"></span>
-                            <span th:text="#{niveau.__${part.niveau}__}">Rouge — 72 h et plus</span>
+                            <span th:text="#{niveau.__${part.niveau}__}">Rouge (72 h et plus)</span>
                             <strong th:text="${part.nombre}">3</strong>
                         </li>
                     </ul>
@@ -173,7 +174,8 @@
                         <td class="text-nowrap"><a th:href="@{/stations/{id}(id=${ligne.incident.equipement.station.id})}"
                                                    th:text="${ligne.incident.equipement.station.nom}">Gare Centrale</a></td>
                         <td class="text-nowrap"><a th:href="@{/equipements/{id}(id=${ligne.incident.equipement.id})}"
-                                                   th:text="${ligne.incident.equipement.reference}">ASC-001</a></td>
+                                                   th:text="${ligne.incident.equipement.reference}">ASC-001</a>
+                            <th:block th:if="${ligne.equipementFragile}"><span th:replace="~{fragments/affichage :: badgeFragile}">Équipement fragile</span></th:block></td>
                         <td><a class="texte-tronque" th:href="@{/incidents/{id}(id=${ligne.incident.id})}"
                                th:title="${ligne.incident.description}" th:text="${ligne.incident.description}">Ascenseur bloqué</a></td>
                         <td class="text-nowrap" th:text="${ligne.incident.prestataire?.nom} ?: 'En attente'">En attente</td>

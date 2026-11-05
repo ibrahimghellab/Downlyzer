@@ -18,6 +18,8 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
 
     List<Incident> findAllByOrderByDateOuvertureDesc();
 
+    List<Incident> findByDateOuvertureGreaterThanEqual(LocalDateTime debut);
+
     List<Incident> findByStatutOrderByDateOuvertureDesc(StatutIncident statut);
 
     Optional<Incident> findFirstByEquipementIdAndStatutNot(Long equipementId, StatutIncident statut);

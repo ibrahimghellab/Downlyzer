@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="${equipement.reference} + ' — Downlyzer'">Équipement — Downlyzer</title>
+    <title th:text="${equipement.reference} + ' - Downlyzer'">Équipement - Downlyzer</title>
     <th:block th:replace="~{fragments/entete :: styles}"></th:block>
 </head>
 <body>
@@ -12,7 +12,7 @@
     <a class="lien-retour" th:href="@{/stations/{id}(id=${equipement.station.id})}"
        th:text="'← ' + ${equipement.station.nom}">← Gare Centrale</a>
 
-    <h1 class="h2 mb-3" th:text="${equipement.reference} + ' — ' + ${equipement.libelle}">ASC-001 — Ascenseur quai A</h1>
+    <h1 class="h2 mb-3" th:text="${equipement.reference} + ' - ' + ${equipement.libelle}">ASC-001 - Ascenseur quai A</h1>
 
     <div class="alert alert-success" role="status" th:if="${succes}" th:text="${succes}">L'incident a bien été déclaré.</div>
 
@@ -27,6 +27,7 @@
                 <dd class="col-sm-9 mb-0">
                     <span class="badge" th:classappend="'etat-' + ${equipement.etat}"
                           th:text="#{etat.__${equipement.etat}__}">En service</span>
+                    <th:block th:if="${fragile}"><span th:replace="~{fragments/affichage :: badgeFragile}">Équipement fragile</span></th:block>
                 </dd>
             </dl>
         </div>
@@ -57,8 +58,8 @@
                     <td><a class="texte-tronque" th:href="@{/incidents/{id}(id=${incident.id})}" th:title="${incident.description}" th:text="${incident.description}">Ascenseur bloqué</a></td>
                     <td><span class="badge" th:classappend="'statut-' + ${incident.statut}"
                               th:text="#{statut.__${incident.statut}__}">Non affecté</span></td>
-                    <td class="text-nowrap" th:text="${incident.prestataire?.nom} ?: '—'">Ascenso Maintenance</td>
-                    <td class="text-nowrap" th:text="${incident.dateResolution != null} ? ${#temporals.format(incident.dateResolution, 'dd/MM/yyyy HH:mm')} : '—'">—</td>
+                    <td class="text-nowrap" th:text="${incident.prestataire?.nom} ?: 'Aucun'">Ascenso Maintenance</td>
+                    <td class="text-nowrap" th:text="${incident.dateResolution != null} ? ${#temporals.format(incident.dateResolution, 'dd/MM/yyyy HH:mm')} : 'En cours'">En cours</td>
                 </tr>
                 </tbody>
             </table>

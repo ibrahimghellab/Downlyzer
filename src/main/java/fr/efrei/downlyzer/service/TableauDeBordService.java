@@ -17,6 +17,7 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class TableauDeBordService {
@@ -38,15 +39,17 @@ public class TableauDeBordService {
     private final EquipementRepository equipementRepository;
     private final TypeEquipementRepository typeEquipementRepository;
     private final PolitiqueUrgence politiqueUrgence;
+    private final EquipementService equipementService;
     private final Clock horloge;
 
     public TableauDeBordService(IncidentRepository incidentRepository, EquipementRepository equipementRepository,
                                 TypeEquipementRepository typeEquipementRepository, PolitiqueUrgence politiqueUrgence,
-                                Clock horloge) {
+                                EquipementService equipementService, Clock horloge) {
         this.incidentRepository = incidentRepository;
         this.equipementRepository = equipementRepository;
         this.typeEquipementRepository = typeEquipementRepository;
         this.politiqueUrgence = politiqueUrgence;
+        this.equipementService = equipementService;
         this.horloge = horloge;
     }
 
@@ -54,9 +57,11 @@ public class TableauDeBordService {
     public List<LigneTableauDeBord> listerIncidentsEnCours(Long stationId, Long typeEquipementId,
                                                            NiveauAttention niveau, OrdreTableauDeBord ordre) {
         LocalDateTime maintenant = LocalDateTime.now(horloge);
+        Set<Long> equipementsFragiles = equipementService.listerEquipementsFragiles();
         return incidentRepository.trouverEnCours(StatutIncident.RESOLU, stationId, typeEquipementId).stream()
                 .map(incident -> new LigneTableauDeBord(incident, politiqueUrgence.evaluer(incident, maintenant),
-                        incident.dureeOuverture(maintenant)))
+                        incident.dureeOuverture(maintenant),
+                        equipementsFragiles.contains(incident.getEquipement().getId())))
                 .filter(ligne -> niveau == null || ligne.niveau() == niveau)
                 .sorted(ORDRES.get(ordre == null ? OrdreTableauDeBord.URGENCE : ordre))
                 .toList();

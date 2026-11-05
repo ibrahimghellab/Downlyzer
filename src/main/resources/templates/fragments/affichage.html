@@ -5,6 +5,8 @@
       th:classappend="'niveau-' + (${niveau} ?: 'AUCUN')"
       th:text="${niveau != null} ? #{niveau.__${niveau}__} : #{niveau.AUCUN}">Aucun incident</span>
 
+<span th:fragment="badgeFragile" class="badge badge-fragile">Équipement fragile</span>
+
 <!-- texte caché pour les lecteurs d'écran -->
 <span th:fragment="etoiles(note)" class="etoiles" th:title="|${note} / 5|">
     <span aria-hidden="true" th:each="rang : ${#numbers.sequence(1, 5)}"

@@ -58,7 +58,7 @@ class StationControleurTest {
         mockMvc.perform(get("/stations").with(connecte(Profil.RESPONSABLE)))
                 .andExpect(status().isOk())
                 .andExpect(view().name("stations/liste"))
-                .andExpect(content().string(containsString("Rouge — 72 h et plus")))
+                .andExpect(content().string(containsString("Rouge (72 h et plus)")))
                 .andExpect(content().string(containsString("Aucun incident")))
                 .andExpect(content().string(containsString("vue=carte")))
                 .andExpect(content().string(not(containsString("leaflet.js"))));
@@ -70,7 +70,7 @@ class StationControleurTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Gare Centrale")))
                 .andExpect(content().string(containsString("Incidents en cours")))
-                .andExpect(content().string(not(containsString("Rouge — 72 h et plus"))))
+                .andExpect(content().string(not(containsString("Rouge (72 h et plus)"))))
                 .andExpect(content().string(not(containsString("vue=carte"))));
     }
 
