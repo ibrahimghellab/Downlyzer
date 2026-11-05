@@ -11,8 +11,8 @@
     <groupId>altn72</groupId>
     <artifactId>TpFilRouge</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>TpFilRouge</name>
-    <description>TpFilRouge</description>
+    <name>Downlyzer</name>
+    <description>Supervision d'équipements et suivi d'incidents</description>
     <url/>
     <licenses>
         <license/>

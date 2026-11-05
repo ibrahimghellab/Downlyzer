@@ -41,6 +41,7 @@ public class IncidentControleur {
         model.addAttribute("declaration", new DescriptionIncidentFormulaire());
         return "incidents/declaration";
     }
+
     @PostMapping("/equipements/{equipementId}/incidents")
     public String declarerIncident(@PathVariable Long equipementId,
                                    @Valid @ModelAttribute("declaration") DescriptionIncidentFormulaire declaration,
@@ -147,10 +148,15 @@ public class IncidentControleur {
         model.addAttribute("evaluation", evaluation);
         model.addAttribute("descriptionModifiable",
                 incidentService.peutModifierDescription(incident, utilisateur.getProfil()));
-        boolean affectationEtResolutionPossibles =
-                incidentService.peutAffecterEtResoudre(incident, utilisateur.getProfil());
-        model.addAttribute("affectationEtResolutionPossibles", affectationEtResolutionPossibles);
-        if (affectationEtResolutionPossibles) {
+        preparerAffectationEtResolution(incident, utilisateur, model);
+        preparerEvaluation(incident, evaluation != null, utilisateur, model);
+        return "incidents/detail";
+    }
+
+    private void preparerAffectationEtResolution(Incident incident, UtilisateurConnecte utilisateur, Model model) {
+        boolean possibles = incidentService.peutAffecterEtResoudre(incident, utilisateur.getProfil());
+        model.addAttribute("affectationEtResolutionPossibles", possibles);
+        if (possibles) {
             model.addAttribute("prestataires", incidentService.listerPrestatairesAffectables(incident));
             model.addAttribute("notesPrestataires", evaluationService.calculerNotesMoyennesParPrestataire());
             if (!model.containsAttribute("affectation")) {
@@ -160,12 +166,14 @@ public class IncidentControleur {
                 model.addAttribute("resolution", new ResolutionFormulaire());
             }
         }
-        boolean evaluationPossible =
-                evaluationService.peutEvaluer(incident, evaluation != null, utilisateur.getProfil());
-        model.addAttribute("evaluationPossible", evaluationPossible);
-        if (evaluationPossible && !model.containsAttribute("nouvelleEvaluation")) {
+    }
+
+    private void preparerEvaluation(Incident incident, boolean dejaEvaluee, UtilisateurConnecte utilisateur,
+                                    Model model) {
+        boolean possible = evaluationService.peutEvaluer(incident, dejaEvaluee, utilisateur.getProfil());
+        model.addAttribute("evaluationPossible", possible);
+        if (possible && !model.containsAttribute("nouvelleEvaluation")) {
             model.addAttribute("nouvelleEvaluation", new EvaluationFormulaire());
         }
-        return "incidents/detail";
     }
 }

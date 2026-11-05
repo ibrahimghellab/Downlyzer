@@ -72,13 +72,15 @@ class TableauDeBordControleurTest {
         Equipement equipement = new Equipement();
         equipement.setReference("ASC-001");
         equipement.setStation(station);
-        Incident incident = Incident.declarerManuellement(equipement, new Utilisateur(), "Ascenseur bloqué entre deux étages",
+        Incident incident = Incident.declarerManuellement(equipement, new Utilisateur(),
+                "Ascenseur bloqué entre deux étages",
                 LocalDateTime.of(2026, 10, 10, 8, 0));
         LigneTableauDeBord ligne = new LigneTableauDeBord(incident, NiveauAttention.ROUGE, Duration.ofHours(80), false);
         when(tableauDeBordService.listerIncidentsEnCours(any(), any(), any(), any())).thenReturn(List.of(ligne));
         when(tableauDeBordService.regrouperParNiveau(any())).thenReturn(colonnes(List.of(ligne)));
         when(tableauDeBordService.calculerIndicateurs()).thenReturn(
-                new IndicateursTableauDeBord(LocalDateTime.of(2026, 10, 14, 12, 0), 11, List.of(new PartNiveau(NiveauAttention.ROUGE, 3, 27.3),
+                new IndicateursTableauDeBord(LocalDateTime.of(2026, 10, 14, 12, 0), 11,
+                        List.of(new PartNiveau(NiveauAttention.ROUGE, 3, 27.3),
                         new PartNiveau(NiveauAttention.ORANGE, 0, 0), new PartNiveau(NiveauAttention.VERT, 5, 45.5),
                         new PartNiveau(NiveauAttention.PRIS_EN_CHARGE, 3, 27.3)), 9, Duration.ofHours(53)));
     }

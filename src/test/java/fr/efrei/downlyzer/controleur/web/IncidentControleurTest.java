@@ -408,7 +408,8 @@ class IncidentControleurTest {
     void uneErreurImprevueAfficheUnMessageGeneriqueSansDetailTechnique() throws Exception {
         mockMvc.perform(get("/error").with(connecte(Profil.AGENT))
                         .requestAttr(RequestDispatcher.ERROR_STATUS_CODE, 500)
-                        .requestAttr(RequestDispatcher.ERROR_EXCEPTION, new IllegalStateException("Connexion à la base perdue")))
+                        .requestAttr(RequestDispatcher.ERROR_EXCEPTION,
+                                new IllegalStateException("Connexion à la base perdue")))
                 .andExpect(status().isInternalServerError())
                 .andExpect(view().name("erreur"))
                 .andExpect(content().string(containsString("Erreur inattendue")))

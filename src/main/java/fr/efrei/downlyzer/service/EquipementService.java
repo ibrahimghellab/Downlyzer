@@ -28,7 +28,7 @@ public class EquipementService {
         this.horloge = horloge;
     }
 
-    public Equipement trouverEquipement(Long id){
+    public Equipement trouverEquipement(Long id) {
         return equipementRepository.findById(id)
                 .orElseThrow(() -> new EquipementIntrouvableException(id));
     }

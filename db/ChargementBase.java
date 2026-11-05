@@ -3,13 +3,17 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.logging.Logger;
 
 // charge db/create.sql dans la base déployée, avec le pilote de l'appli (le client de xampp sait pas parler à mysql 8)
 // lancer depuis la racine du projet avec : java -cp <jar du pilote mariadb> db/ChargementBase.java
 // variables : DB_ADMIN_URL, DB_ADMIN_USERNAME, DB_ADMIN_PASSWORD, et DB_PASSWORD pour créer downlyzer_app
 public class ChargementBase {
 
+    private static final Logger JOURNAL = Logger.getLogger(ChargementBase.class.getName());
+
     public static void main(String[] arguments) throws Exception {
+        System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         String url = variable("DB_ADMIN_URL");
         String motDePasseApplication = variable("DB_PASSWORD");
         // le mot de passe est collé dans le CREATE USER, qui accepte pas de paramètre
@@ -20,7 +24,8 @@ public class ChargementBase {
         // un ; en fin de ligne termine une instruction, même suivi d'un commentaire
         String[] instructions = Files.readString(Path.of("db/create.sql")).split(";[ \\t]*(--[^\\n]*)?\\r?\\n");
 
-        try (Connection connexion = DriverManager.getConnection(url, variable("DB_ADMIN_USERNAME"), variable("DB_ADMIN_PASSWORD"));
+        try (Connection connexion = DriverManager.getConnection(
+                url, variable("DB_ADMIN_USERNAME"), variable("DB_ADMIN_PASSWORD"));
              Statement requete = connexion.createStatement()) {
             // même fuseau que l'appli, sinon NOW() est en utc et les incidents sont décalés d'une heure
             requete.execute("SET time_zone = '+01:00'");
@@ -31,12 +36,12 @@ public class ChargementBase {
                     executees++;
                 }
             }
-            System.out.println(executees + " instructions de db/create.sql exécutées.");
+            JOURNAL.info(executees + " instructions de db/create.sql exécutées.");
 
             requete.execute("CREATE USER IF NOT EXISTS 'downlyzer_app'@'%' IDENTIFIED BY '" + motDePasseApplication + "'");
             requete.execute("ALTER USER 'downlyzer_app'@'%' IDENTIFIED BY '" + motDePasseApplication + "'");
             requete.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON downlyzer.* TO 'downlyzer_app'@'%'");
-            System.out.println("Compte downlyzer_app prêt.");
+            JOURNAL.info("Compte downlyzer_app prêt.");
         }
     }
 

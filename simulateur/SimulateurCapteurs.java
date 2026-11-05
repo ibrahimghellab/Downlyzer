@@ -7,11 +7,13 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Random;
+import java.util.logging.Logger;
 
 // simule des capteurs qui signalent des pannes à l'api (clé dans DOWNLYZER_API_KEY)
 // lancer avec : java simulateur/SimulateurCapteurs.java [nombre] [adresse]
 public class SimulateurCapteurs {
 
+    private static final Logger JOURNAL = Logger.getLogger(SimulateurCapteurs.class.getName());
     private static final Duration PAUSE_ENTRE_SIGNALEMENTS = Duration.ofSeconds(3);
 
     // références des équipements des données de démo
@@ -26,6 +28,7 @@ public class SimulateurCapteurs {
             "Arrêt d'urgence déclenché, redémarrage automatique impossible");
 
     public static void main(String[] arguments) throws Exception {
+        System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         int nombre = arguments.length > 0 ? Integer.parseInt(arguments[0]) : 5;
         String adresse = arguments.length > 1 ? arguments[1] : "http://localhost:8080";
         String cle = System.getenv("DOWNLYZER_API_KEY");
@@ -46,8 +49,9 @@ public class SimulateurCapteurs {
                             "{\"referenceEquipement\":\"" + reference + "\",\"description\":\"" + panne + "\"}"))
                     .build();
             HttpResponse<String> reponse = client.send(requete, HttpResponse.BodyHandlers.ofString());
-            System.out.printf("%s  capteur %-8s  %d  %s%n", LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")),
-                    reference, reponse.statusCode(), resumer(reponse));
+            JOURNAL.info(String.format("%s  capteur %-8s  %d  %s",
+                    LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")),
+                    reference, reponse.statusCode(), resumer(reponse)));
             if (i < nombre) {
                 Thread.sleep(PAUSE_ENTRE_SIGNALEMENTS);
             }
